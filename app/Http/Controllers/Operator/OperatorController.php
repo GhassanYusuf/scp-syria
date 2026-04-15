@@ -29,6 +29,7 @@ class OperatorController extends Controller
             'hours'   => $lot->working_hours,
             'lat'     => (float) $lot->latitude,
             'lng'     => (float) $lot->longitude,
+            'image'   => $lot->image ? Storage::url($lot->image) : null,
         ])->values();
 
         $selectedLotId  = $request->get('lot_id');

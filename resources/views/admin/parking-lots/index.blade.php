@@ -82,9 +82,21 @@
                 @forelse($parkingLots as $lot)
                 <tr>
                     <td>
-                        <div class="fw-600" style="color:#0f172a;">{{ $lot->name }}</div>
-                        <div class="text-xs" style="color:#94a3b8;direction:ltr;text-align:right;">
-                            {{ number_format($lot->latitude, 5) }}, {{ number_format($lot->longitude, 5) }}
+                        <div class="d-flex align-items-center gap-2">
+                            @if($lot->image)
+                            <img src="{{ Storage::url($lot->image) }}" alt=""
+                                 style="width:36px;height:36px;object-fit:cover;border-radius:.375rem;flex-shrink:0;">
+                            @else
+                            <div style="width:36px;height:36px;background:#e2e8f0;border-radius:.375rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i class="bi bi-buildings" style="color:#94a3b8;font-size:.85rem;"></i>
+                            </div>
+                            @endif
+                            <div>
+                                <div class="fw-600" style="color:#0f172a;">{{ $lot->name }}</div>
+                                <div class="text-xs" style="color:#94a3b8;direction:ltr;text-align:right;">
+                                    {{ number_format($lot->latitude, 5) }}, {{ number_format($lot->longitude, 5) }}
+                                </div>
+                            </div>
                         </div>
                     </td>
                     <td>
@@ -204,6 +216,19 @@
                         <div class="col-md-6">
                             <label class="form-label">ساعات العمل <span style="color:#ef4444;">*</span></label>
                             <input type="text" name="working_hours" id="f_hours" class="form-control" value="24/7" required>
+                        </div>
+
+                        {{-- Image --}}
+                        <div class="col-12">
+                            <label class="form-label">صورة الموقف</label>
+                            <input type="file" name="image" id="f_image" class="form-control"
+                                   accept="image/jpg,image/jpeg,image/png,image/webp"
+                                   onchange="previewImage(this)">
+                            <div class="text-xs mt-1" style="color:#94a3b8;">JPG / PNG / WebP — حد أقصى 3MB. اتركه فارغاً للإبقاء على الصورة الحالية عند التعديل.</div>
+                            <div id="imagePreviewWrap" class="mt-2" style="display:none;">
+                                <img id="imagePreview" src="" alt=""
+                                     style="height:100px;border-radius:.5rem;object-fit:cover;border:2px solid #e2e8f0;">
+                            </div>
                         </div>
 
                         {{-- Location --}}
@@ -385,8 +410,20 @@ document.getElementById('addLotBtn').onclick = () => {
     document.getElementById('lotForm').reset();
     document.getElementById('modalLabel').textContent = 'إضافة موقف جديد';
     document.getElementById('submitText').textContent  = 'حفظ الموقف';
+    document.getElementById('imagePreviewWrap').style.display = 'none';
     modal.show();
 };
+
+function previewImage(input) {
+    const wrap = document.getElementById('imagePreviewWrap');
+    const img  = document.getElementById('imagePreview');
+    if (input.files && input.files[0]) {
+        img.src = URL.createObjectURL(input.files[0]);
+        wrap.style.display = 'block';
+    } else {
+        wrap.style.display = 'none';
+    }
+}
 
 async function editLot(id) {
     editingId = id;
@@ -402,6 +439,16 @@ async function editLot(id) {
         document.getElementById('f_lat').value      = data.latitude;
         document.getElementById('f_lng').value      = data.longitude;
         document.getElementById('f_address').value  = data.address;
+        document.getElementById('f_image').value    = '';
+        // Show existing image preview
+        const wrap = document.getElementById('imagePreviewWrap');
+        const img  = document.getElementById('imagePreview');
+        if (data.image) {
+            img.src = '/storage/' + data.image;
+            wrap.style.display = 'block';
+        } else {
+            wrap.style.display = 'none';
+        }
         modal.show();
     } catch { alert('خطأ في تحميل البيانات'); }
     finally { setBtnLoading(false); }
@@ -411,9 +458,11 @@ document.getElementById('lotForm').onsubmit = async (e) => {
     e.preventDefault();
     setBtnLoading(true);
     try {
+        const fd = new FormData(e.target);
+        if (editingId) fd.append('_method', 'PUT');
         const res    = await fetch(editingId ? `/admin/parking-lots/${editingId}` : '/admin/parking-lots', {
-            method: editingId ? 'PUT' : 'POST',
-            body: new FormData(e.target)
+            method: 'POST',
+            body: fd
         });
         const result = await res.json();
         result.success ? location.reload() : alert(result.message || 'خطأ في العملية');

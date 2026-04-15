@@ -21,6 +21,7 @@ class ParkingLot extends Model
         'longitude',
         'working_hours',
         'is_active',
+        'image',
     ];
 
     protected $casts = [

@@ -7,6 +7,7 @@ use App\Http\Requests\StoreParkingLotRequest;
 use App\Models\ParkingLot;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 
 class ParkingLotController extends Controller
 {
@@ -32,7 +33,13 @@ class ParkingLotController extends Controller
 
     public function store(StoreParkingLotRequest $request): JsonResponse
     {
-        $parkingLot = ParkingLot::create($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('parking-lots', 'public');
+        }
+
+        $parkingLot = ParkingLot::create($data);
 
         return response()->json([
             'success' => true,
@@ -43,7 +50,16 @@ class ParkingLotController extends Controller
 
     public function update(StoreParkingLotRequest $request, ParkingLot $parkingLot): JsonResponse
     {
-        $parkingLot->update($request->validated());
+        $data = $request->validated();
+
+        if ($request->hasFile('image')) {
+            if ($parkingLot->image) {
+                Storage::disk('public')->delete($parkingLot->image);
+            }
+            $data['image'] = $request->file('image')->store('parking-lots', 'public');
+        }
+
+        $parkingLot->update($data);
 
         return response()->json([
             'success' => true,

@@ -30,6 +30,7 @@ class StoreParkingLotRequest extends FormRequest
             'longitude' => 'required|numeric|between:-180,180',
             'working_hours' => 'required|string|max:100',
             'is_active' => 'boolean',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
         ];
     }
 

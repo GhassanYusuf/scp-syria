@@ -3,37 +3,88 @@
 @section('page-title', 'لوحة المشغّل')
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <style>
-    /* ── Leaflet ──────────────────────────────────────────────────────── */
-    .leaflet-container img { max-width:none !important; box-shadow:none !important; }
-    .leaflet-container     { direction:ltr; }
+    /* ── Portrait lot picker cards ───────────────────────────────────── */
+    .lot-portrait-card {
+        background:#fff;
+        border-radius:16px;
+        overflow:hidden;
+        box-shadow:0 6px 20px rgba(0,0,0,.07);
+        cursor:pointer;
+        transition:transform .25s, box-shadow .25s;
+        height:100%;
+        display:flex;
+        flex-direction:column;
+    }
+    .lot-portrait-card:hover {
+        transform:translateY(-8px);
+        box-shadow:0 18px 40px rgba(0,0,0,.13);
+    }
 
-    /* ── Lot picker cards ─────────────────────────────────────────────── */
-    .lot-picker-card {
-        background:#fff; border:2px solid #e2e8f0; border-radius:.875rem;
-        padding:1.125rem 1.25rem; cursor:pointer;
-        transition:border-color .18s, box-shadow .18s, transform .18s;
-        position:relative; overflow:hidden;
+    /* Image area */
+    .lot-card-img-wrap {
+        position:relative;
+        height:190px;
+        overflow:hidden;
+        flex-shrink:0;
     }
-    .lot-picker-card::before {
-        content:''; position:absolute; inset-inline-start:0; top:0; bottom:0;
-        width:4px; background:#6366f1; opacity:0; transition:opacity .18s;
+    .lot-card-img-wrap img {
+        width:100%; height:100%;
+        object-fit:cover;
+        transition:transform .4s;
     }
-    .lot-picker-card:hover { border-color:#a5b4fc; box-shadow:0 4px 20px rgba(99,102,241,.12); transform:translateY(-2px); }
-    .lot-picker-card:hover::before,
-    .lot-picker-card.highlighted::before { opacity:1; }
-    .lot-picker-card.highlighted { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.15); }
-    .lot-picker-card .select-btn {
-        display:none; width:100%; margin-top:.875rem; padding:.45rem;
-        background:#6366f1; color:#fff; border:none; border-radius:.5rem;
-        font-family:'Cairo',sans-serif; font-weight:700; font-size:.875rem; cursor:pointer;
+    .lot-portrait-card:hover .lot-card-img-wrap img { transform:scale(1.07); }
+
+    /* Gradient placeholder when no image */
+    .lot-card-placeholder {
+        width:100%; height:100%;
+        display:flex; flex-direction:column;
+        align-items:center; justify-content:center;
+        color:rgba(255,255,255,.85);
     }
-    .lot-picker-card:hover .select-btn,
-    .lot-picker-card.highlighted .select-btn { display:block; }
-    .lot-picker-card .select-btn:hover { background:#4f46e5; }
-    .occ-bar { height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden; margin:.5rem 0 .625rem; }
+    .lot-card-placeholder i   { font-size:3.5rem; margin-bottom:.5rem; opacity:.7; }
+    .lot-card-placeholder span { font-size:.95rem; font-weight:700; text-align:center; padding:0 1rem; opacity:.9; }
+
+    /* Availability badge over image */
+    .lot-card-avail-badge {
+        position:absolute;
+        top:12px;
+        inset-inline-end:12px;
+        padding:.28em .75em;
+        border-radius:20px;
+        font-size:.72rem;
+        font-weight:700;
+        color:#fff;
+        backdrop-filter:blur(6px);
+        -webkit-backdrop-filter:blur(6px);
+    }
+
+    /* Card body */
+    .lot-card-body {
+        padding:1rem 1.125rem 1.125rem;
+        flex:1;
+        display:flex;
+        flex-direction:column;
+    }
+    .lot-card-title   { font-size:1rem; font-weight:800; color:#0f172a; margin-bottom:.2rem; line-height:1.3; }
+    .lot-card-address { font-size:.78rem; color:#94a3b8; margin-bottom:.625rem; display:flex; align-items:flex-start; gap:.3rem; }
+
+    .occ-bar      { height:5px; background:#e2e8f0; border-radius:3px; overflow:hidden; margin:.5rem 0 .5rem; }
     .occ-bar-fill { height:100%; border-radius:3px; transition:width .4s; }
+
+    .lot-card-stats { display:flex; gap:1rem; font-size:.75rem; color:#64748b; flex-wrap:wrap; }
+    .lot-card-stats span { display:flex; align-items:center; gap:.25rem; }
+
+    /* Select button — slides up on hover */
+    .lot-card-select-wrap { margin-top:auto; padding-top:.75rem; overflow:hidden; max-height:0; transition:max-height .2s; }
+    .lot-portrait-card:hover .lot-card-select-wrap { max-height:60px; }
+    .lot-card-select-btn {
+        display:block; width:100%; padding:.5rem;
+        background:#6366f1; color:#fff; border:none; border-radius:.625rem;
+        font-family:'Cairo',sans-serif; font-weight:700; font-size:.875rem; cursor:pointer;
+        transition:background .15s;
+    }
+    .lot-card-select-btn:hover { background:#4f46e5; }
 
     /* ── Operator panel — search bar area ────────────────────────────── */
     .search-container {
@@ -91,16 +142,29 @@
      LOT PICKER — no lot selected
 ══════════════════════════════════════════════════════════════════════ --}}
 @if(!$selectedLot)
+@php
+$gradients = [
+    'linear-gradient(135deg,#1e1b4b 0%,#4338ca 100%)',
+    'linear-gradient(135deg,#064e3b 0%,#10b981 100%)',
+    'linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)',
+    'linear-gradient(135deg,#7c2d12 0%,#f97316 100%)',
+    'linear-gradient(135deg,#4a044e 0%,#9333ea 100%)',
+    'linear-gradient(135deg,#0f172a 0%,#475569 100%)',
+];
+@endphp
 
-<div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+{{-- Header + search bar --}}
+<div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
     <div>
-        <h2 class="fw-800 mb-0" style="font-size:1.1rem;color:#0f172a;">اختر موقف السيارات</h2>
-        <p class="text-sm mb-0" style="color:#64748b;">ابحث عن موقفك وابدأ إدارة السيارات</p>
+        <h2 class="fw-800 mb-0" style="font-size:1.15rem;color:#0f172a;">اختر موقف السيارات</h2>
+        <p class="text-sm mb-0" style="color:#64748b;">اضغط على الموقف للبدء في إدارة السيارات</p>
     </div>
-    <span class="badge badge-soft-primary">{{ $parkingLots->count() }} موقف متاح</span>
+    <span class="badge badge-soft-primary" style="font-size:.8rem;padding:.5em .9em;">
+        {{ $parkingLots->count() }} موقف متاح
+    </span>
 </div>
 
-<div class="input-group mb-4" style="max-width:480px;">
+<div class="input-group mb-4" style="max-width:460px;">
     <span class="input-group-text" style="background:#fff;border-color:#e2e8f0;">
         <i class="bi bi-search" style="color:#94a3b8;"></i>
     </span>
@@ -111,79 +175,80 @@
     </button>
 </div>
 
-<div class="row g-3">
-    <div class="col-lg-6 col-xl-5" id="cardsCol">
-        <p id="searchMeta" class="text-xs mb-2" style="color:#94a3b8;display:none;"></p>
-        <div id="cardGrid" class="row g-3">
-            @forelse($parkingLots as $lot)
-            @php
-                $pct   = $lot['total'] > 0 ? round($lot['occupied'] / $lot['total'] * 100) : 0;
-                $avail = $lot['avail'];
-                if ($avail === 0)                      { $badgeCls='badge-soft-danger';  $badgeTxt='ممتلئ';            $barCol='#ef4444'; }
-                elseif ($avail < $lot['total'] * 0.2) { $badgeCls='badge-soft-warning'; $badgeTxt=$avail.' محدود';   $barCol='#f59e0b'; }
-                else                                   { $badgeCls='badge-soft-success'; $badgeTxt=$avail.' متاح';    $barCol='#10b981'; }
-            @endphp
-            <div class="col-12 lot-card-wrap"
-                 data-name="{{ mb_strtolower($lot['name']) }}"
-                 data-address="{{ mb_strtolower($lot['address']) }}">
-                <div class="lot-picker-card" id="lcard-{{ $lot['id'] }}" onclick="selectLot({{ $lot['id'] }})">
-                    <div class="d-flex align-items-start justify-content-between gap-2">
-                        <div>
-                            <div class="fw-700" style="color:#0f172a;font-size:.95rem;">{{ $lot['name'] }}</div>
-                            <div class="text-xs mt-1" style="color:#94a3b8;">
-                                <i class="bi bi-geo-alt me-1"></i>{{ $lot['address'] }}
-                            </div>
-                        </div>
-                        <span class="badge {{ $badgeCls }} flex-shrink-0" style="font-size:.72rem;">{{ $badgeTxt }}</span>
+<p id="searchMeta" class="text-xs mb-3" style="color:#94a3b8;display:none;"></p>
+
+{{-- Portrait card grid --}}
+<div class="row g-4" id="cardGrid">
+
+    @forelse($parkingLots as $lot)
+    @php
+        $pct      = $lot['total'] > 0 ? round($lot['occupied'] / $lot['total'] * 100) : 0;
+        $avail    = $lot['avail'];
+        $gradient = $gradients[$lot['id'] % 6];
+        if ($avail === 0)                     { $badgeColor='rgba(239,68,68,.82)';   $badgeTxt='ممتلئ';          $barCol='#ef4444'; }
+        elseif ($avail < $lot['total'] * 0.2) { $badgeColor='rgba(245,158,11,.82)'; $badgeTxt=$avail.' مكان';   $barCol='#f59e0b'; }
+        else                                  { $badgeColor='rgba(16,185,129,.82)';  $badgeTxt=$avail.' متاح';   $barCol='#10b981'; }
+    @endphp
+    <div class="col-sm-6 col-md-4 col-lg-3 lot-card-wrap"
+         data-name="{{ mb_strtolower($lot['name']) }}"
+         data-address="{{ mb_strtolower($lot['address']) }}">
+
+        <div class="lot-portrait-card" onclick="selectLot({{ $lot['id'] }})">
+
+            {{-- Image or gradient placeholder --}}
+            <div class="lot-card-img-wrap">
+                @if($lot['image'])
+                    <img src="{{ $lot['image'] }}" alt="{{ $lot['name'] }}">
+                @else
+                    <div class="lot-card-placeholder" style="background:{{ $gradient }};">
+                        <i class="bi bi-buildings"></i>
+                        <span>{{ $lot['name'] }}</span>
                     </div>
-                    <div class="occ-bar mt-2">
-                        <div class="occ-bar-fill" style="width:{{ $pct }}%;background:{{ $barCol }};"></div>
-                    </div>
-                    <div class="d-flex gap-3 text-xs" style="color:#64748b;">
-                        <span><i class="bi bi-car-front me-1"></i>{{ $lot['total'] }} مكان</span>
-                        <span><i class="bi bi-currency-exchange me-1"></i>{{ number_format($lot['price']) }}/ساعة</span>
-                        <span><i class="bi bi-clock me-1"></i>{{ $lot['hours'] }}</span>
-                    </div>
-                    <button class="select-btn" onclick="event.stopPropagation();selectLot({{ $lot['id'] }})">
-                        <i class="bi bi-check2-circle me-2"></i>اختر هذا الموقف
+                @endif
+                <span class="lot-card-avail-badge" style="background:{{ $badgeColor }};">
+                    {{ $badgeTxt }}
+                </span>
+            </div>
+
+            {{-- Card body --}}
+            <div class="lot-card-body">
+                <div class="lot-card-title">{{ $lot['name'] }}</div>
+                <div class="lot-card-address">
+                    <i class="bi bi-geo-alt flex-shrink-0"></i>
+                    <span>{{ $lot['address'] }}</span>
+                </div>
+
+                <div class="occ-bar">
+                    <div class="occ-bar-fill" style="width:{{ $pct }}%;background:{{ $barCol }};"></div>
+                </div>
+
+                <div class="lot-card-stats">
+                    <span><i class="bi bi-car-front"></i>{{ $lot['total'] }} مكان</span>
+                    <span><i class="bi bi-currency-exchange"></i>{{ number_format($lot['price']) }} ل.س/س</span>
+                    <span><i class="bi bi-clock"></i>{{ $lot['hours'] }}</span>
+                </div>
+
+                <div class="lot-card-select-wrap">
+                    <button class="lot-card-select-btn" onclick="event.stopPropagation();selectLot({{ $lot['id'] }})">
+                        <i class="bi bi-check2-circle me-1"></i>اختر هذا الموقف
                     </button>
                 </div>
             </div>
-            @empty
-            <div class="col-12 text-center py-5" style="color:#94a3b8;">
-                <i class="bi bi-buildings d-block mb-2" style="font-size:2.5rem;opacity:.3;"></i>
-                <span class="text-sm">لا توجد مواقف نشطة</span>
-            </div>
-            @endforelse
-            <div id="noResults" class="col-12 text-center py-4" style="color:#94a3b8;display:none;">
-                <i class="bi bi-search d-block mb-2" style="font-size:2rem;opacity:.3;"></i>
-                <span class="text-sm">لا توجد نتائج مطابقة</span>
-            </div>
+
         </div>
     </div>
-
-    <div class="col-lg-6 col-xl-7" id="mapCol">
-        <div class="card" style="height:520px;overflow:hidden;">
-            <div class="card-header py-2 d-flex align-items-center justify-content-between">
-                <span class="fw-700 text-sm" style="color:#0f172a;">
-                    <i class="bi bi-map me-1" style="color:#6366f1;"></i>خريطة المواقف
-                </span>
-                <span class="badge badge-soft-info text-xs">اضغط على الموقف للتحديد</span>
-            </div>
-            <div id="opMap" style="height:calc(100% - 49px);"></div>
-        </div>
+    @empty
+    <div class="col-12 text-center py-5" style="color:#94a3b8;">
+        <i class="bi bi-buildings d-block mb-2" style="font-size:3rem;opacity:.3;"></i>
+        <span>لا توجد مواقف نشطة</span>
     </div>
-</div>
+    @endforelse
 
-<div class="d-flex d-lg-none gap-2 mt-3">
-    <button class="btn btn-sm fw-600 flex-fill" id="mTabCards" onclick="mobileTab('cards')"
-            style="background:#6366f1;color:#fff;border:none;font-family:'Cairo',sans-serif;">
-        <i class="bi bi-grid me-1"></i>البطاقات
-    </button>
-    <button class="btn btn-sm fw-600 flex-fill" id="mTabMap" onclick="mobileTab('map')"
-            style="background:#f1f5f9;color:#475569;border:none;font-family:'Cairo',sans-serif;">
-        <i class="bi bi-map me-1"></i>الخريطة
-    </button>
+    <div id="noResults" class="col-12 text-center py-4" style="color:#94a3b8;display:none;">
+        <i class="bi bi-search d-block mb-2" style="font-size:2rem;opacity:.3;"></i>
+        <span class="text-sm">لا توجد نتائج مطابقة</span>
+    </div>
+
 </div>
 
 
@@ -526,7 +591,6 @@
 </div>
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 const lots = {!! $parkingLots->toJson() !!};
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
@@ -537,52 +601,9 @@ function selectLot(id) { window.location = '/operator/dashboard?lot_id=' + id; }
 // ═══════════════════════════════════════════════════════════
 // LOT PICKER
 // ═══════════════════════════════════════════════════════════
-const map = L.map('opMap').setView([33.5138, 36.2765], 12);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(map);
-const markers = {};
-
-lots.forEach(l => {
-    const col  = l.avail === 0 ? '#ef4444' : (l.avail < l.total * .2 ? '#f59e0b' : '#10b981');
-    const pct  = l.total > 0 ? Math.round(l.occupied / l.total * 100) : 0;
-    const icon = L.divIcon({
-        html:`<div style="width:40px;height:40px;background:${col};border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 12px rgba(0,0,0,.3);"></div>`,
-        iconSize:[40,40], iconAnchor:[20,40], className:''
-    });
-    const m = L.marker([l.lat, l.lng], { icon }).addTo(map);
-    markers[l.id] = m;
-    m.bindPopup(`
-        <div style="font-family:'Cairo',sans-serif;min-width:190px;padding:4px 2px;">
-            <strong style="color:#0f172a;">${l.name}</strong>
-            <p style="margin:4px 0 8px;font-size:.78rem;color:#64748b;">${l.address}</p>
-            <div style="height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden;margin-bottom:8px;">
-                <div style="height:100%;width:${pct}%;background:${col};border-radius:3px;"></div>
-            </div>
-            <button onclick="selectLot(${l.id})"
-                style="width:100%;padding:7px;background:${col};color:#fff;border:none;border-radius:6px;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;">
-                اختر هذا الموقف
-            </button>
-        </div>
-    `);
-    m.on('click', () => highlightCard(l.id));
-});
-
-if (lots.length) {
-    const g = L.featureGroup(lots.map(l => L.marker([l.lat, l.lng])));
-    map.fitBounds(g.getBounds().pad(.15));
-}
-
-let hlId = null;
-function highlightCard(id) {
-    if (hlId) document.getElementById('lcard-' + hlId)?.classList.remove('highlighted');
-    hlId = id;
-    const card = document.getElementById('lcard-' + id);
-    if (card) { card.classList.add('highlighted'); card.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
-    const l = lots.find(x => x.id === id);
-    if (l) map.setView([l.lat, l.lng], 15, { animate:true });
-}
-
 const searchEl = document.getElementById('lotSearch');
 const clearBtn = document.getElementById('clearSearch');
+
 searchEl.addEventListener('input', () => {
     const q = searchEl.value.trim().toLowerCase();
     clearBtn.style.display = q ? 'block' : 'none';
@@ -592,7 +613,7 @@ searchEl.addEventListener('input', () => {
         w.style.display = match ? '' : 'none';
         if (match) vis++;
     });
-    document.getElementById('noResults').style.display = vis === 0 ? 'block' : 'none';
+    document.getElementById('noResults').style.display = (vis === 0 && q) ? 'block' : 'none';
     const meta = document.getElementById('searchMeta');
     meta.style.display = q ? 'block' : 'none';
     meta.textContent = `${vis} نتيجة من أصل ${lots.length}`;
@@ -600,22 +621,6 @@ searchEl.addEventListener('input', () => {
 clearBtn.addEventListener('click', () => {
     searchEl.value = ''; searchEl.dispatchEvent(new Event('input')); searchEl.focus();
 });
-
-function mobileTab(tab) {
-    const cc = document.getElementById('cardsCol'), mc = document.getElementById('mapCol');
-    const bc = document.getElementById('mTabCards'), bm = document.getElementById('mTabMap');
-    if (tab === 'map') {
-        cc.style.display='none'; mc.style.display='';
-        bm.style.cssText='background:#6366f1;color:#fff;border:none;font-family:Cairo,sans-serif;';
-        bc.style.cssText='background:#f1f5f9;color:#475569;border:none;font-family:Cairo,sans-serif;';
-        setTimeout(() => map.invalidateSize(), 80);
-    } else {
-        cc.style.display=''; mc.style.display='';
-        bc.style.cssText='background:#6366f1;color:#fff;border:none;font-family:Cairo,sans-serif;';
-        bm.style.cssText='background:#f1f5f9;color:#475569;border:none;font-family:Cairo,sans-serif;';
-    }
-}
-if (window.innerWidth < 992) document.getElementById('mapCol').style.display = 'none';
 
 @else
 // ═══════════════════════════════════════════════════════════
