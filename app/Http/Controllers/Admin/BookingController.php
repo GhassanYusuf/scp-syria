@@ -13,19 +13,38 @@ class BookingController extends Controller
     public function activeIndex(Request $request): \Illuminate\View\View
     {
         $parkingLotId = $request->get('parking_lot_id');
-        $parkingLots = ParkingLot::active()->get(['id', 'name']);
+        $search       = $request->get('search');
+        $parkingLots  = ParkingLot::active()->get(['id', 'name']);
 
-        $query = Booking::with('parkingLot')
-            ->where('status', 'active')
-            ->orderBy('start_time', 'desc');
+        $base = Booking::with('parkingLot')->where('status', 'active');
+
+        // Summary stats (always across all lots/filters)
+        $stats = [
+            'total'       => (clone $base)->count(),
+            'walkin'      => (clone $base)->where('source', 'walk_in')->count(),
+            'reservation' => (clone $base)->where('source', 'reservation')->count(),
+            'overdue'     => (clone $base)->where('end_time', '<', now())->count(),
+        ];
+
+        // Filtered query
+        $query = (clone $base)->orderBy('start_time', 'asc');
 
         if ($parkingLotId) {
             $query->where('parking_lot_id', $parkingLotId);
         }
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('vehicle_plate', 'like', "%{$search}%")
+                  ->orWhere('customer_name', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%");
+            });
+        }
 
         $activeBookings = $query->paginate(50);
 
-        return view('admin.bookings.active', compact('activeBookings', 'parkingLots', 'parkingLotId'));
+        return view('admin.bookings.active', compact(
+            'activeBookings', 'parkingLots', 'parkingLotId', 'stats', 'search'
+        ));
     }
 
     public function completeBooking(Request $request, Booking $booking): JsonResponse
