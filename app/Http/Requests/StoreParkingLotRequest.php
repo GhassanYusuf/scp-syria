@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreParkingLotRequest extends FormRequest
 {
@@ -22,7 +23,10 @@ class StoreParkingLotRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('parking_lots', 'name')->ignore($this->route('parkingLot')),
+            ],
             'address' => 'required|string|max:500',
             'total_capacity' => 'required|integer|min:1|max:10000',
             'price_per_hour' => 'required|numeric|min:0.01|max:1000',
@@ -38,6 +42,7 @@ class StoreParkingLotRequest extends FormRequest
     {
         return [
             'name.required' => 'اسم الموقف مطلوب.',
+            'name.unique' => 'يوجد موقف بهذا الاسم مسبقاً.',
             'address.required' => 'العنوان مطلوب.',
             'total_capacity.required' => 'السعة مطلوبة.',
             'price_per_hour.required' => 'سعر الساعة مطلوب.',
