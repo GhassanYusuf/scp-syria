@@ -29,11 +29,7 @@
         transition:opacity .18s;
         border-radius:2px 0 0 2px;
     }
-    .lot-picker-card:hover {
-        border-color:#a5b4fc;
-        box-shadow:0 4px 20px rgba(99,102,241,.12);
-        transform:translateY(-2px);
-    }
+    .lot-picker-card:hover { border-color:#a5b4fc; box-shadow:0 4px 20px rgba(99,102,241,.12); transform:translateY(-2px); }
     .lot-picker-card:hover::before { opacity:1; }
     .lot-picker-card.highlighted   { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.15); }
     .lot-picker-card.highlighted::before { opacity:1; }
@@ -70,28 +66,71 @@
         margin-bottom:1.5rem;
     }
 
-    /* ── Tabs ─────────────────────────────────────────────────────────── */
-    .op-tabs { display:flex; gap:.375rem; margin-bottom:1.25rem; border-bottom:2px solid #e2e8f0; padding-bottom:0; }
-    .op-tab  {
-        padding:.55rem 1.125rem;
+    /* ── Booking cards ───────────────────────────────────────────────── */
+    .booking-card {
+        background:#fff;
         border:none;
-        border-bottom:3px solid transparent;
-        margin-bottom:-2px;
-        background:none;
-        font-family:'Cairo',sans-serif;
-        font-weight:600;
-        font-size:.875rem;
+        border-radius:1rem;
+        box-shadow:0 4px 16px rgba(0,0,0,.06);
+        overflow:hidden;
+        transition:transform .2s, box-shadow .2s;
+        height:100%;
+    }
+    .booking-card:hover {
+        transform:translateY(-5px);
+        box-shadow:0 10px 28px rgba(0,0,0,.1);
+    }
+    .booking-card-header {
+        padding:.75rem 1rem;
+        font-weight:700;
+        font-size:.8rem;
+        color:#fff;
+        text-align:center;
+        letter-spacing:.02em;
+    }
+    .booking-card-header.reservation { background:linear-gradient(90deg,#1e1b4b,#4338ca); }
+    .booking-card-header.walkin      { background:linear-gradient(90deg,#064e3b,#059669); }
+
+    .plate-display {
+        font-size:1.6rem;
+        font-weight:900;
+        letter-spacing:.12em;
+        color:#0f172a;
+        background:#f8fafc;
+        border:2px solid #e2e8f0;
+        border-radius:.625rem;
+        padding:.6rem 1rem;
+        text-align:center;
+        margin:.875rem;
+        font-family:monospace;
+        direction:ltr;
+    }
+
+    .booking-card-body {
+        padding:0 .875rem .875rem;
+    }
+
+    .booking-card-body .customer-name {
+        text-align:center;
         color:#64748b;
-        cursor:pointer;
-        border-radius:.5rem .5rem 0 0;
-        transition:color .15s, border-color .15s;
+        font-size:.82rem;
+        margin-bottom:.5rem;
+    }
+
+    .time-badge {
         display:flex;
         align-items:center;
-        gap:.4rem;
+        justify-content:center;
+        gap:.375rem;
+        background:#f1f5f9;
+        border-radius:.5rem;
+        padding:.35rem .625rem;
+        font-size:.78rem;
+        color:#475569;
+        margin-bottom:.75rem;
     }
-    .op-tab:hover { color:#0f172a; }
-    .op-tab.active { color:#6366f1; border-bottom-color:#6366f1; }
-    .op-tab .badge { font-size:.68rem; padding:.2em .5em; }
+
+    .booking-card-divider { border:none; border-top:1px dashed #e2e8f0; margin:.625rem 0; }
 
     /* ── Receipt modal ────────────────────────────────────────────────── */
     .fee-row { display:flex; justify-content:space-between; padding:.35rem 0; border-bottom:1px dashed #f1f5f9; font-size:.875rem; }
@@ -101,6 +140,10 @@
     .pay-method:hover { border-color:#a5b4fc; }
     .pay-method.selected { border-color:#6366f1; background:#f0f4ff; }
     .pay-method i { font-size:1.5rem; display:block; margin-bottom:.25rem; }
+
+    /* Empty state */
+    .empty-state { text-align:center; padding:3rem 1rem; color:#94a3b8; }
+    .empty-state i { font-size:3rem; display:block; margin-bottom:.75rem; opacity:.3; }
 </style>
 @endpush
 
@@ -154,9 +197,7 @@
 
                     <div class="d-flex align-items-start justify-content-between gap-2">
                         <div>
-                            <div class="fw-700" style="color:#0f172a;font-size:.95rem;line-height:1.3;">
-                                {{ $lot['name'] }}
-                            </div>
+                            <div class="fw-700" style="color:#0f172a;font-size:.95rem;line-height:1.3;">{{ $lot['name'] }}</div>
                             <div class="text-xs mt-1" style="color:#94a3b8;">
                                 <i class="bi bi-geo-alt me-1"></i>{{ $lot['address'] }}
                             </div>
@@ -228,6 +269,7 @@
 @php
     $pct      = $selectedLot->usage_percentage;
     $barColor = $pct >= 90 ? '#ef4444' : ($pct >= 60 ? '#f59e0b' : '#10b981');
+    $totalCards = $activeCars->count() + $reservations->count();
 @endphp
 
 {{-- ── Selected lot header ─────────────────────────────────────────── --}}
@@ -243,7 +285,6 @@
     </div>
 
     <div class="d-flex align-items-center gap-3 flex-wrap">
-        {{-- Live stats --}}
         <div class="d-flex gap-3 text-center">
             <div>
                 <div class="fw-800" style="font-size:1.3rem;line-height:1;color:#6ee7b7;">{{ $selectedLot->available_spaces }}</div>
@@ -261,7 +302,6 @@
             </div>
         </div>
 
-        {{-- Capacity bar (inline) --}}
         <div style="min-width:120px;">
             <div class="d-flex justify-content-between mb-1" style="font-size:.7rem;opacity:.75;">
                 <span>الإشغال</span><span>{{ round($pct) }}%</span>
@@ -271,7 +311,6 @@
             </div>
         </div>
 
-        {{-- Change lot --}}
         <a href="{{ route('operator.dashboard') }}"
            class="btn btn-sm fw-600"
            style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:.5rem;font-family:'Cairo',sans-serif;">
@@ -280,239 +319,247 @@
     </div>
 </div>
 
+{{-- ── Toolbar: search + new entry ─────────────────────────────────── --}}
+<div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+    <div class="input-group flex-grow-1" style="max-width:420px;">
+        <span class="input-group-text" style="background:#fff;border-color:#e2e8f0;">
+            <i class="bi bi-search" style="color:#94a3b8;"></i>
+        </span>
+        <input type="text" id="cardSearch" class="form-control" style="border-color:#e2e8f0;"
+               placeholder="ابحث برقم اللوحة أو اسم العميل...">
+        <button id="clearCardSearch" class="btn" style="display:none;background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <div class="d-flex gap-2 me-auto">
+        <span class="badge badge-soft-primary" style="font-size:.78rem;padding:.4em .8em;">
+            <i class="bi bi-calendar-check me-1"></i>{{ $reservations->count() }} حجز مسبق
+        </span>
+        <span class="badge badge-soft-success" style="font-size:.78rem;padding:.4em .8em;">
+            <i class="bi bi-car-front me-1"></i>{{ $activeCars->count() }} داخل الآن
+        </span>
+    </div>
+
+    <button class="btn fw-700"
+            style="background:#10b981;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem 1.125rem;"
+            data-bs-toggle="modal" data-bs-target="#newEntryModal">
+        <i class="bi bi-plus-lg me-1"></i>دخول مباشر جديد
+    </button>
+</div>
+
+{{-- ── Booking cards grid ───────────────────────────────────────────── --}}
+<div class="row g-3" id="bookingCards">
+
+    {{-- Reservation cards (not yet arrived) --}}
+    @foreach($reservations as $res)
+    <div class="col-sm-6 col-lg-4 col-xl-3 booking-card-wrap"
+         data-plate="{{ mb_strtolower($res->vehicle_plate ?? '') }}"
+         data-name="{{ mb_strtolower($res->customer_name ?? '') }}">
+        <div class="booking-card">
+            <div class="booking-card-header reservation">
+                <i class="bi bi-calendar-check me-1"></i>حجز مسبق #{{ $res->id }}
+            </div>
+
+            <div class="plate-display">{{ $res->vehicle_plate ?? '—' }}</div>
+
+            <div class="booking-card-body">
+                <div class="customer-name">
+                    <i class="bi bi-person me-1"></i>{{ $res->customer_name ?? 'غير محدد' }}
+                    @if($res->phone)
+                    <div style="direction:ltr;font-size:.75rem;color:#94a3b8;">{{ $res->phone }}</div>
+                    @endif
+                </div>
+
+                <div class="time-badge">
+                    <i class="bi bi-clock" style="color:#6366f1;"></i>
+                    {{ $res->start_time->format('H:i') }} — {{ $res->end_time->format('H:i') }}
+                    <span style="color:#94a3b8;">{{ $res->start_time->format('d/m') }}</span>
+                </div>
+
+                <hr class="booking-card-divider">
+
+                <button class="btn w-100 fw-700 mb-2 btn-checkin-{{ $res->id }}"
+                        style="background:#6366f1;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem;"
+                        onclick="activateRes({{ $res->id }}, this)">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>تسجيل الدخول
+                </button>
+                <button class="btn btn-outline-danger w-100 fw-600"
+                        style="border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.4rem;font-size:.82rem;opacity:.4;cursor:not-allowed;"
+                        id="checkout-res-{{ $res->id }}" disabled>
+                    <i class="bi bi-receipt me-1"></i>خروج وفاتورة
+                </button>
+            </div>
+        </div>
+    </div>
+    @endforeach
+
+    {{-- Walk-in cards (already inside) --}}
+    @foreach($activeCars as $car)
+    @php
+        $elapsedMin = $car->start_time->diffInMinutes(now());
+        $remainMins = now()->diffInMinutes($car->end_time, false);
+        $isOverdue  = $remainMins < 0;
+    @endphp
+    <div class="col-sm-6 col-lg-4 col-xl-3 booking-card-wrap"
+         id="card-{{ $car->id }}"
+         data-plate="{{ mb_strtolower($car->vehicle_plate ?? '') }}"
+         data-name="{{ mb_strtolower($car->customer_name ?? '') }}">
+        <div class="booking-card">
+            <div class="booking-card-header walkin">
+                <i class="bi bi-car-front me-1"></i>داخل الموقف
+            </div>
+
+            <div class="plate-display">{{ $car->vehicle_plate ?? '—' }}</div>
+
+            <div class="booking-card-body">
+                <div class="customer-name">
+                    <i class="bi bi-person me-1"></i>{{ $car->customer_name ?? 'غير محدد' }}
+                    @if($car->phone)
+                    <div style="direction:ltr;font-size:.75rem;color:#94a3b8;">{{ $car->phone }}</div>
+                    @endif
+                </div>
+
+                <div class="time-badge">
+                    <i class="bi bi-clock-history" style="color:#10b981;"></i>
+                    دخل {{ $car->start_time->format('H:i') }}
+                    &nbsp;·&nbsp;
+                    {{ floor($elapsedMin/60) }}س {{ $elapsedMin%60 }}د
+                </div>
+
+                @if($isOverdue)
+                <div class="text-center mb-2">
+                    <span class="badge badge-soft-danger" style="font-size:.72rem;">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        تجاوز {{ floor(abs($remainMins)/60) }}س {{ abs($remainMins)%60 }}د
+                    </span>
+                </div>
+                @else
+                <div class="text-center mb-2">
+                    <span class="badge badge-soft-warning" style="font-size:.72rem;">
+                        متبقي {{ floor($remainMins/60) }}س {{ $remainMins%60 }}د
+                    </span>
+                </div>
+                @endif
+
+                <hr class="booking-card-divider">
+
+                <button onclick="openReceipt({{ $car->id }})"
+                        class="btn w-100 fw-700"
+                        style="background:#ef4444;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem;">
+                    <i class="bi bi-receipt me-1"></i>خروج وفاتورة
+                </button>
+            </div>
+        </div>
+    </div>
+    @endforeach
+
+    {{-- Empty state --}}
+    @if($totalCards === 0)
+    <div class="col-12">
+        <div class="empty-state">
+            <i class="bi bi-car-front"></i>
+            <p class="fw-600 mb-1" style="color:#64748b;font-size:1rem;">لا توجد سيارات أو حجوزات نشطة</p>
+            <p class="text-sm mb-3" style="color:#94a3b8;">سجّل دخول سيارة جديدة للبدء</p>
+            <button class="btn fw-700"
+                    style="background:#10b981;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem 1.5rem;"
+                    data-bs-toggle="modal" data-bs-target="#newEntryModal">
+                <i class="bi bi-plus-lg me-1"></i>دخول مباشر جديد
+            </button>
+        </div>
+    </div>
+    @endif
+
+    {{-- No search results --}}
+    <div id="noCardResults" class="col-12" style="display:none;">
+        <div class="empty-state">
+            <i class="bi bi-search"></i>
+            <p class="fw-600 mb-0" style="color:#64748b;">لا توجد نتائج مطابقة</p>
+        </div>
+    </div>
+</div>
+
 {{-- Auto-refresh countdown --}}
-<div class="d-flex justify-content-end mb-2">
+<div class="d-flex justify-content-end mt-3">
     <span class="badge badge-soft-secondary text-xs" id="refresh-badge">—</span>
 </div>
 
-{{-- ── Tabs ───────────────────────────────────────────────────────────── --}}
-<div class="op-tabs">
-    <button class="op-tab active" onclick="switchTab('active')" id="tab-active">
-        <i class="bi bi-car-front"></i>
-        السيارات النشطة
-        <span class="badge badge-soft-warning">{{ $activeCars->count() }}</span>
-    </button>
-    <button class="op-tab" onclick="switchTab('checkin')" id="tab-checkin">
-        <i class="bi bi-box-arrow-in-left"></i>
-        إدخال يدوي
-    </button>
-    <button class="op-tab" onclick="switchTab('reservations')" id="tab-reservations">
-        <i class="bi bi-calendar-check"></i>
-        الحجوزات المسبقة
-        <span class="badge badge-soft-primary">{{ $reservations->count() }}</span>
-    </button>
-</div>
-
-{{-- ─────────────────────────────────────────────────────────────────────
-     TAB 1: Active walk-in cars
-──────────────────────────────────────────────────────────────────────── --}}
-<div id="panel-active">
-    <div class="card">
-        <div class="card-header d-flex align-items-center justify-content-between py-2">
-            <span class="fw-700 text-sm" style="color:#0f172a;">
-                <i class="bi bi-car-front me-1" style="color:#6366f1;"></i>السيارات داخل الموقف
-            </span>
-        </div>
-
-        @if($activeCars->isEmpty())
-        <div class="text-center py-5" style="color:#94a3b8;">
-            <i class="bi bi-car-front d-block mb-2" style="font-size:2.5rem;opacity:.3;"></i>
-            <p class="fw-600 mb-1" style="color:#64748b;">لا توجد سيارات داخل الموقف</p>
-            <button class="btn btn-sm fw-600 mt-1"
-                    style="background:#6366f1;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;"
-                    onclick="switchTab('checkin')">
-                <i class="bi bi-plus-circle me-1"></i>إدخال سيارة جديدة
-            </button>
-        </div>
-        @else
-        <div class="table-responsive">
-            <table class="app-table w-100">
-                <thead>
-                    <tr>
-                        <th>رقم اللوحة</th>
-                        <th>السائق</th>
-                        <th>وقت الدخول</th>
-                        <th>المدة</th>
-                        <th>المتبقي</th>
-                        <th class="text-center">إجراء</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($activeCars as $car)
-                    @php
-                        $elapsedMin  = $car->start_time->diffInMinutes(now());
-                        $remainMins  = now()->diffInMinutes($car->end_time, false);
-                        $isOverdue   = $remainMins < 0;
-                    @endphp
-                    <tr id="row-{{ $car->id }}">
-                        <td>
-                            <span class="fw-800" style="font-family:monospace;font-size:1rem;color:#0f172a;letter-spacing:.03em;">
-                                {{ $car->vehicle_plate ?? '—' }}
-                            </span>
-                        </td>
-                        <td class="text-sm" style="color:#475569;">
-                            {{ $car->customer_name ?? 'غير محدد' }}
-                            @if($car->phone)
-                            <div class="text-xs" style="color:#94a3b8;direction:ltr;text-align:right;">{{ $car->phone }}</div>
-                            @endif
-                        </td>
-                        <td class="text-sm" style="color:#475569;">
-                            {{ $car->start_time->format('H:i') }}
-                            <div class="text-xs" style="color:#94a3b8;">{{ $car->start_time->format('Y/m/d') }}</div>
-                        </td>
-                        <td>
-                            <span class="badge badge-soft-secondary text-xs">
-                                {{ floor($elapsedMin/60) }}س {{ $elapsedMin%60 }}د
-                            </span>
-                        </td>
-                        <td>
-                            @if($isOverdue)
-                            <span class="badge badge-soft-danger text-xs fw-600">
-                                تجاوز {{ floor(abs($remainMins)/60) }}س {{ abs($remainMins)%60 }}د
-                            </span>
-                            @else
-                            <span class="badge badge-soft-warning text-xs fw-600">
-                                {{ floor($remainMins/60) }}س {{ $remainMins%60 }}د
-                            </span>
-                            @endif
-                        </td>
-                        <td class="text-center">
-                            <button onclick="openReceipt({{ $car->id }})"
-                                    class="btn btn-sm fw-600"
-                                    style="background:rgba(99,102,241,.1);color:#4338ca;border:none;border-radius:.375rem;font-family:'Cairo',sans-serif;padding:.3rem .875rem;">
-                                <i class="bi bi-receipt me-1"></i>خروج وفاتورة
-                            </button>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        @endif
-    </div>
-</div>
-
-{{-- ─────────────────────────────────────────────────────────────────────
-     TAB 2: Manual check-in form
-──────────────────────────────────────────────────────────────────────── --}}
-<div id="panel-checkin" style="display:none;">
-    <div class="card" style="max-width:560px;">
-        <div class="card-header" style="background:rgba(16,185,129,.05);">
-            <span class="fw-700 text-sm" style="color:#059669;">
-                <i class="bi bi-box-arrow-in-left me-1"></i>تسجيل دخول سيارة جديدة
-            </span>
-        </div>
-        <div class="card-body p-4">
-            <form id="checkInForm">
-                @csrf
-                <input type="hidden" name="parking_lot_id" value="{{ $selectedLot->id }}">
-
-                <div class="mb-3">
-                    <label class="form-label">رقم اللوحة <span style="color:#ef4444;">*</span></label>
-                    <input type="text" name="vehicle_plate" required
-                           class="form-control fw-700"
-                           style="font-size:1.05rem;letter-spacing:.04em;"
-                           placeholder="مثال: أ ب ج 1234"
-                           autocomplete="off">
-                </div>
-
-                <div class="row g-3 mb-3">
-                    <div class="col-sm-6">
-                        <label class="form-label">اسم السائق</label>
-                        <input type="text" name="customer_name" class="form-control" placeholder="اختياري">
-                    </div>
-                    <div class="col-sm-6">
-                        <label class="form-label">الهاتف</label>
-                        <input type="tel" name="phone" class="form-control" placeholder="اختياري" dir="ltr">
-                    </div>
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label">المدة المتوقعة <span style="color:#ef4444;">*</span></label>
-                    <div class="row g-2">
-                        @foreach([1,2,3,4,6,8,12,24,48,72] as $h)
-                        <div class="col-4 col-sm-3">
-                            <label class="d-block text-center px-2 py-2 rounded-3"
-                                   style="border:2px solid #e2e8f0;cursor:pointer;font-size:.82rem;font-weight:600;color:#475569;transition:all .15s;"
-                                   onclick="this.parentElement.parentElement.querySelectorAll('label').forEach(l=>l.style.cssText='border:2px solid #e2e8f0;cursor:pointer;font-size:.82rem;font-weight:600;color:#475569;transition:all .15s;');this.style.cssText='border:2px solid #6366f1;cursor:pointer;font-size:.82rem;font-weight:700;color:#4338ca;background:#f0f4ff;transition:all .15s;'">
-                                <input type="radio" name="duration_hours" value="{{ $h }}" class="d-none" {{ $h==2 ? 'checked' : '' }}>
-                                {{ $h }}{{ $h >= 24 ? ' يوم' : 'س' }}
-                            </label>
-                        </div>
-                        @endforeach
-                    </div>
-                </div>
-
-                <button type="submit" id="checkInBtn"
-                        class="btn w-100 fw-700"
-                        style="background:#10b981;color:#fff;border:none;border-radius:.5rem;padding:.7rem;font-family:'Cairo',sans-serif;font-size:.95rem;">
-                    <i class="bi bi-box-arrow-in-left me-2"></i>تسجيل الدخول
-                </button>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- ─────────────────────────────────────────────────────────────────────
-     TAB 3: Pre-reservations
-──────────────────────────────────────────────────────────────────────── --}}
-<div id="panel-reservations" style="display:none;">
-    <div class="card">
-        <div class="card-header d-flex align-items-center justify-content-between py-2">
-            <span class="fw-700 text-sm" style="color:#0f172a;">
-                <i class="bi bi-calendar-check me-1" style="color:#0ea5e9;"></i>حجوزات قادمة
-            </span>
-        </div>
-
-        @if($reservations->isEmpty())
-        <div class="text-center py-5" style="color:#94a3b8;">
-            <i class="bi bi-calendar-x d-block mb-2" style="font-size:2.5rem;opacity:.3;"></i>
-            <p class="fw-600 mb-0" style="color:#64748b;">لا توجد حجوزات مسبقة لهذا الموقف</p>
-        </div>
-        @else
-        <div class="table-responsive">
-            <table class="app-table w-100">
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>العميل</th>
-                        <th>الهاتف</th>
-                        <th>وقت البدء</th>
-                        <th>وقت الانتهاء</th>
-                        <th class="text-center">إجراء</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($reservations as $res)
-                    <tr id="res-{{ $res->id }}">
-                        <td class="text-sm" style="color:#94a3b8;">{{ $res->id }}</td>
-                        <td class="fw-600 text-sm" style="color:#0f172a;">{{ $res->customer_name ?? '—' }}</td>
-                        <td class="text-sm" style="color:#475569;direction:ltr;text-align:right;">{{ $res->phone ?? '—' }}</td>
-                        <td class="text-sm" style="color:#475569;">
-                            {{ $res->start_time->format('H:i') }}
-                            <div class="text-xs" style="color:#94a3b8;">{{ $res->start_time->format('Y/m/d') }}</div>
-                        </td>
-                        <td class="text-sm" style="color:#475569;">
-                            {{ $res->end_time->format('H:i') }}
-                            <div class="text-xs" style="color:#94a3b8;">{{ $res->end_time->format('Y/m/d') }}</div>
-                        </td>
-                        <td class="text-center">
-                            <button onclick="activateRes({{ $res->id }}, this)"
-                                    class="btn btn-sm fw-600"
-                                    style="background:rgba(16,185,129,.1);color:#059669;border:none;border-radius:.375rem;font-family:'Cairo',sans-serif;padding:.3rem .875rem;">
-                                <i class="bi bi-door-open me-1"></i>فتح البوابة
-                            </button>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-        @endif
-    </div>
-</div>
-
 @endif {{-- end selectedLot --}}
+
+
+{{-- ══════════════════════════════════════════════════════════════════════
+     DIRECT ENTRY MODAL
+══════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="newEntryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:460px;">
+        <div class="modal-content" style="border:none;border-radius:1rem;overflow:hidden;">
+
+            <div class="modal-header" style="background:#064e3b;color:#fff;border:none;padding:1.125rem 1.5rem;">
+                <div>
+                    <h5 class="modal-title fw-800 mb-0" style="font-size:1rem;">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>تسجيل دخول مباشر
+                    </h5>
+                    <div class="text-xs mt-1" style="opacity:.7;">أدخل بيانات السيارة لتسجيل الدخول الفوري</div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <form id="checkInForm">
+                    @csrf
+                    <input type="hidden" name="parking_lot_id" value="{{ $selectedLot->id ?? '' }}">
+
+                    <div class="mb-3">
+                        <label class="form-label fw-700" style="font-size:.88rem;">رقم اللوحة <span style="color:#ef4444;">*</span></label>
+                        <input type="text" name="vehicle_plate" id="newPlateInput" required
+                               class="form-control fw-800 text-center"
+                               style="font-size:1.2rem;letter-spacing:.1em;border-color:#e2e8f0;"
+                               placeholder="أ ب ج 1234"
+                               autocomplete="off">
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label class="form-label fw-700" style="font-size:.88rem;">اسم السائق</label>
+                            <input type="text" name="customer_name" class="form-control" style="border-color:#e2e8f0;" placeholder="اختياري">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label fw-700" style="font-size:.88rem;">الهاتف</label>
+                            <input type="tel" name="phone" class="form-control" style="border-color:#e2e8f0;" placeholder="اختياري" dir="ltr">
+                        </div>
+                    </div>
+
+                    <div class="mb-1">
+                        <label class="form-label fw-700" style="font-size:.88rem;">المدة المتوقعة <span style="color:#ef4444;">*</span></label>
+                        <div class="row g-2">
+                            @foreach([1,2,3,4,6,8,12,24,48,72] as $h)
+                            <div class="col-4 col-sm-3">
+                                <label class="d-block text-center px-1 py-2 rounded-3 duration-tile"
+                                       style="border:2px solid #e2e8f0;cursor:pointer;font-size:.82rem;font-weight:600;color:#475569;transition:all .15s;">
+                                    <input type="radio" name="duration_hours" value="{{ $h }}" class="d-none" {{ $h==2 ? 'checked' : '' }}>
+                                    {{ $h >= 24 ? ($h/24).' يوم' : $h.'س' }}
+                                </label>
+                            </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer" style="border:none;padding:1rem 1.5rem 1.5rem;">
+                <button type="button" class="btn fw-600"
+                        style="background:#f1f5f9;color:#475569;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;"
+                        data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" id="checkInBtn"
+                        class="btn fw-700 flex-fill"
+                        style="background:#10b981;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.65rem;"
+                        onclick="submitCheckIn()">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>تأكيد الدخول
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 {{-- ══════════════════════════════════════════════════════════════════════
@@ -540,7 +587,7 @@
                         <i class="bi bi-car-front" style="color:#fff;font-size:1.2rem;"></i>
                     </div>
                     <div>
-                        <div class="fw-800" style="font-size:1.1rem;color:#0f172a;letter-spacing:.04em;" id="rcpt-plate">—</div>
+                        <div class="fw-800" style="font-size:1.1rem;color:#0f172a;letter-spacing:.04em;font-family:monospace;" id="rcpt-plate">—</div>
                         <div class="text-xs" style="color:#64748b;" id="rcpt-name">—</div>
                     </div>
                     <div class="me-auto text-center">
@@ -599,7 +646,6 @@
                         </div>
                     </div>
 
-                    {{-- File upload (hidden until upload selected) --}}
                     <div id="uploadArea" class="mt-3" style="display:none;">
                         <label class="form-label text-sm">رفع إيصال الدفع <span style="color:#ef4444;">*</span></label>
                         <input type="file" id="paymentProofFile" accept="image/*,.pdf"
@@ -630,7 +676,6 @@
 const lots = {!! $parkingLots->toJson() !!};
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
-// ── Navigate to lot ──────────────────────────────────────────────────────────
 function selectLot(id) { window.location = '/operator/dashboard?lot_id=' + id; }
 
 @if(!$selectedLot)
@@ -638,7 +683,6 @@ function selectLot(id) { window.location = '/operator/dashboard?lot_id=' + id; }
 // LOT PICKER SCRIPTS
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── Map ──────────────────────────────────────────────────────────────────────
 const map = L.map('opMap').setView([33.5138, 36.2765], 12);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(map);
 const markers = {};
@@ -670,7 +714,6 @@ lots.forEach(l => {
             </button>
         </div>
     `);
-
     m.on('click', () => highlightCard(l.id));
 });
 
@@ -679,21 +722,16 @@ if (lots.length) {
     map.fitBounds(g.getBounds().pad(.15));
 }
 
-// ── Card highlight ───────────────────────────────────────────────────────────
 let hlId = null;
 function highlightCard(id) {
     if (hlId) document.getElementById('lcard-' + hlId)?.classList.remove('highlighted');
     hlId = id;
     const card = document.getElementById('lcard-' + id);
-    if (card) {
-        card.classList.add('highlighted');
-        card.scrollIntoView({ behavior:'smooth', block:'nearest' });
-    }
+    if (card) { card.classList.add('highlighted'); card.scrollIntoView({ behavior:'smooth', block:'nearest' }); }
     const l = lots.find(x => x.id === id);
     if (l) map.setView([l.lat, l.lng], 15, { animate:true });
 }
 
-// ── Search ───────────────────────────────────────────────────────────────────
 const searchEl  = document.getElementById('lotSearch');
 const clearBtn  = document.getElementById('clearSearch');
 const noResults = document.getElementById('noResults');
@@ -716,7 +754,6 @@ clearBtn.addEventListener('click', () => {
     searchEl.value = ''; searchEl.dispatchEvent(new Event('input')); searchEl.focus();
 });
 
-// ── Mobile tab ───────────────────────────────────────────────────────────────
 function mobileTab(tab) {
     const cc = document.getElementById('cardsCol');
     const mc = document.getElementById('mapCol');
@@ -737,56 +774,81 @@ if (window.innerWidth < 992) {
     document.getElementById('mapCol').style.display = 'none';
 }
 
-// Highlight duration radio default
-document.querySelectorAll('input[name="duration_hours"]').forEach(r => {
-    if (r.checked) r.closest('label').style.cssText='border:2px solid #6366f1;cursor:pointer;font-size:.82rem;font-weight:700;color:#4338ca;background:#f0f4ff;transition:all .15s;';
-});
-
 @else
 // ════════════════════════════════════════════════════════════════════════════
 // OPERATOR PANEL SCRIPTS
 // ════════════════════════════════════════════════════════════════════════════
 
-// ── Tabs ─────────────────────────────────────────────────────────────────────
-function switchTab(name) {
-    ['active','checkin','reservations'].forEach(t => {
-        document.getElementById('panel-' + t).style.display = t === name ? '' : 'none';
-        document.getElementById('tab-' + t).classList.toggle('active', t === name);
-    });
-}
+// ── Card search ───────────────────────────────────────────────────────────────
+const cardSearch = document.getElementById('cardSearch');
+const clearCardSearch = document.getElementById('clearCardSearch');
 
-// ── Check-in form ─────────────────────────────────────────────────────────────
-// Default duration highlight
-document.querySelectorAll('input[name="duration_hours"]').forEach(r => {
-    if (r.checked) r.closest('label').style.cssText='border:2px solid #6366f1;cursor:pointer;font-size:.82rem;font-weight:700;color:#4338ca;background:#f0f4ff;transition:all .15s;';
-    r.addEventListener('change', () => {
-        document.querySelectorAll('input[name="duration_hours"]').forEach(x =>
-            x.closest('label').style.cssText='border:2px solid #e2e8f0;cursor:pointer;font-size:.82rem;font-weight:600;color:#475569;transition:all .15s;'
-        );
-        r.closest('label').style.cssText='border:2px solid #6366f1;cursor:pointer;font-size:.82rem;font-weight:700;color:#4338ca;background:#f0f4ff;transition:all .15s;';
+cardSearch.addEventListener('input', () => {
+    const q = cardSearch.value.trim().toLowerCase();
+    clearCardSearch.style.display = q ? 'block' : 'none';
+    let vis = 0;
+    document.querySelectorAll('.booking-card-wrap').forEach(w => {
+        const match = !q || w.dataset.plate.includes(q) || w.dataset.name.includes(q);
+        w.style.display = match ? '' : 'none';
+        if (match) vis++;
     });
+    document.getElementById('noCardResults').style.display =
+        (vis === 0 && q) ? 'block' : 'none';
+});
+clearCardSearch.addEventListener('click', () => {
+    cardSearch.value = ''; cardSearch.dispatchEvent(new Event('input')); cardSearch.focus();
 });
 
-document.getElementById('checkInForm')?.addEventListener('submit', async e => {
-    e.preventDefault();
-    const btn = document.getElementById('checkInBtn');
+// ── Duration tile highlight ───────────────────────────────────────────────────
+function initDurationTiles() {
+    document.querySelectorAll('.duration-tile').forEach(label => {
+        const radio = label.querySelector('input[type="radio"]');
+        if (radio.checked) label.style.cssText = 'border:2px solid #10b981;cursor:pointer;font-size:.82rem;font-weight:700;color:#059669;background:#f0fdf4;transition:all .15s;border-radius:.75rem;';
+        radio.addEventListener('change', () => {
+            document.querySelectorAll('.duration-tile').forEach(l =>
+                l.style.cssText = 'border:2px solid #e2e8f0;cursor:pointer;font-size:.82rem;font-weight:600;color:#475569;transition:all .15s;border-radius:.75rem;'
+            );
+            label.style.cssText = 'border:2px solid #10b981;cursor:pointer;font-size:.82rem;font-weight:700;color:#059669;background:#f0fdf4;transition:all .15s;border-radius:.75rem;';
+        });
+    });
+}
+initDurationTiles();
+
+// ── Check-in form submit ──────────────────────────────────────────────────────
+async function submitCheckIn() {
+    const form = document.getElementById('checkInForm');
+    const btn  = document.getElementById('checkInBtn');
+    if (!form.vehicle_plate.value.trim()) {
+        form.vehicle_plate.focus(); return;
+    }
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>جاري التسجيل...';
     try {
-        const res  = await fetch('/operator/check-in', { method:'POST', body: new FormData(e.target) });
+        const res  = await fetch('/operator/check-in', { method:'POST', body: new FormData(form) });
         const data = await res.json();
         if (data.success) {
             btn.style.background = '#059669';
-            btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>تم التسجيل — يتم التحديث...';
-            setTimeout(() => location.reload(), 900);
+            btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>تم التسجيل!';
+            setTimeout(() => location.reload(), 700);
         } else {
-            alert(data.message || 'حدث خطأ'); resetCheckInBtn();
+            alert(data.message || 'حدث خطأ');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>تأكيد الدخول';
         }
-    } catch { alert('خطأ في الاتصال'); resetCheckInBtn(); }
-    function resetCheckInBtn() {
+    } catch {
+        alert('خطأ في الاتصال');
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-box-arrow-in-left me-2"></i>تسجيل الدخول';
+        btn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>تأكيد الدخول';
     }
+}
+
+// Reset modal form when closed
+document.getElementById('newEntryModal').addEventListener('hidden.bs.modal', () => {
+    document.getElementById('checkInForm').reset();
+    document.getElementById('checkInBtn').disabled = false;
+    document.getElementById('checkInBtn').innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>تأكيد الدخول';
+    document.getElementById('checkInBtn').style.background = '#10b981';
+    initDurationTiles();
 });
 
 // ── Activate reservation ──────────────────────────────────────────────────────
@@ -801,15 +863,30 @@ async function activateRes(id, btn) {
         });
         const data = await res.json();
         if (data.success) {
-            document.getElementById('res-' + id)?.remove();
-            alert(data.message);
-            location.reload();
-        } else { alert(data.message || 'حدث خطأ'); btn.innerHTML=orig; btn.disabled=false; }
-    } catch { alert('خطأ في الاتصال'); btn.innerHTML=orig; btn.disabled=false; }
+            // swap check-in button to success state, enable checkout
+            btn.style.background = '#059669';
+            btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>تم الدخول';
+            const checkoutBtn = document.getElementById('checkout-res-' + id);
+            if (checkoutBtn) {
+                checkoutBtn.disabled = false;
+                checkoutBtn.style.opacity = '1';
+                checkoutBtn.style.cursor  = 'pointer';
+                checkoutBtn.onclick = () => openReceipt(id);
+            }
+        } else {
+            alert(data.message || 'حدث خطأ');
+            btn.innerHTML = orig;
+            btn.disabled  = false;
+        }
+    } catch {
+        alert('خطأ في الاتصال');
+        btn.innerHTML = orig;
+        btn.disabled  = false;
+    }
 }
 
 // ── Receipt modal ─────────────────────────────────────────────────────────────
-let receiptModal = null;
+let receiptModal    = null;
 let currentBookingId = null;
 let selectedPayment  = 'cash';
 
@@ -823,15 +900,12 @@ async function openReceipt(id) {
     selectedPayment  = 'cash';
     selectPayment('cash');
 
-    // Reset breakdown
     document.getElementById('rcpt-breakdown').innerHTML =
         '<div class="text-center py-2" style="color:#94a3b8;"><span class="spinner-border spinner-border-sm"></span></div>';
-    document.getElementById('rcpt-plate').textContent    = '—';
-    document.getElementById('rcpt-name').textContent     = '—';
-    document.getElementById('rcpt-duration').textContent = '—';
-    document.getElementById('rcpt-entry').textContent    = '—';
-    document.getElementById('rcpt-exit').textContent     = '—';
-    document.getElementById('rcpt-total').textContent    = '—';
+    ['rcpt-plate','rcpt-name','rcpt-duration','rcpt-entry','rcpt-exit','rcpt-total'].forEach(i =>
+        document.getElementById(i).textContent = '—'
+    );
+    document.getElementById('rcpt-lot').textContent = '';
 
     getModal().show();
 
@@ -842,33 +916,31 @@ async function openReceipt(id) {
         const d = data.data;
 
         document.getElementById('rcpt-lot').textContent      = d.lot_name;
-        document.getElementById('rcpt-plate').textContent    = d.plate    || '—';
+        document.getElementById('rcpt-plate').textContent    = d.plate         || '—';
         document.getElementById('rcpt-name').textContent     = d.customer_name || 'غير محدد';
         document.getElementById('rcpt-duration').textContent = d.duration_label;
         document.getElementById('rcpt-entry').textContent    = d.entry_time;
         document.getElementById('rcpt-exit').textContent     = d.exit_time;
         document.getElementById('rcpt-total').textContent    = Number(d.total_fee).toLocaleString('ar-SA') + ' ل.س';
 
-        // Breakdown table
         const rows = d.fee_details.map(r => `
             <div class="fee-row">
                 <span>${r.day} <small style="color:#94a3b8;">${r.date}</small></span>
                 <span style="color:#64748b;">${r.hours}س × ${Number(r.rate).toLocaleString('ar-SA')}</span>
                 <span class="fw-600" style="color:#0f172a;">${Number(r.subtotal).toLocaleString('ar-SA')} ل.س</span>
             </div>`).join('');
-        document.getElementById('rcpt-breakdown').innerHTML = rows || '<p class="text-xs text-center" style="color:#94a3b8;">لا تفاصيل</p>';
+        document.getElementById('rcpt-breakdown').innerHTML =
+            rows || '<p class="text-xs text-center" style="color:#94a3b8;">لا تفاصيل</p>';
     } catch { alert('تعذّر تحميل بيانات الفاتورة'); }
 }
 
-// Payment method toggle
 function selectPayment(method) {
     selectedPayment = method;
-    document.getElementById('pm-cash').classList.toggle('selected', method === 'cash');
+    document.getElementById('pm-cash').classList.toggle('selected',   method === 'cash');
     document.getElementById('pm-upload').classList.toggle('selected', method === 'upload');
     document.getElementById('uploadArea').style.display = method === 'upload' ? 'block' : 'none';
 }
 
-// Confirm payment
 document.getElementById('confirmPayBtn').addEventListener('click', async () => {
     if (!currentBookingId) return;
     if (selectedPayment === 'upload' && !document.getElementById('paymentProofFile').files.length) {
@@ -879,7 +951,6 @@ document.getElementById('confirmPayBtn').addEventListener('click', async () => {
     btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>جاري المعالجة...';
 
     const fd = new FormData();
-    fd.append('_method', 'POST');
     fd.append('payment_method', selectedPayment);
     if (selectedPayment === 'upload') {
         fd.append('payment_proof', document.getElementById('paymentProofFile').files[0]);
@@ -887,27 +958,31 @@ document.getElementById('confirmPayBtn').addEventListener('click', async () => {
 
     try {
         const res  = await fetch(`/operator/${currentBookingId}/payment`, {
-            method:'POST',
-            headers:{'X-CSRF-TOKEN':csrf},
-            body: fd
+            method:'POST', headers:{'X-CSRF-TOKEN':csrf}, body: fd
         });
         const data = await res.json();
         if (data.success) {
             getModal().hide();
-            document.getElementById('row-' + currentBookingId)?.remove();
-            const row = document.getElementById('row-' + currentBookingId);
-            if (row) { row.style.transition='opacity .4s'; row.style.opacity='0'; setTimeout(()=>row.remove(),400); }
+            const card = document.getElementById('card-' + currentBookingId);
+            if (card) { card.style.transition='opacity .4s'; card.style.opacity='0'; setTimeout(()=>card.remove(),400); }
             setTimeout(() => location.reload(), 600);
         } else {
             alert(data.message || 'حدث خطأ');
-            btn.disabled = false;
+            btn.disabled  = false;
             btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>تأكيد الدفع وإغلاق البوابة';
         }
     } catch {
         alert('خطأ في الاتصال');
-        btn.disabled = false;
+        btn.disabled  = false;
         btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>تأكيد الدفع وإغلاق البوابة';
     }
+});
+
+// Reset receipt modal on close
+document.getElementById('receiptModal').addEventListener('hidden.bs.modal', () => {
+    document.getElementById('confirmPayBtn').disabled  = false;
+    document.getElementById('confirmPayBtn').innerHTML = '<i class="bi bi-check2-circle me-2"></i>تأكيد الدفع وإغلاق البوابة';
+    document.getElementById('paymentProofFile').value  = '';
 });
 
 // ── Auto-refresh countdown ────────────────────────────────────────────────────
