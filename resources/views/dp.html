@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <title>مواقف السيارات في دمشق</title>
+    
+    <!-- Leaflet CSS for interactive map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        input, button { -webkit-user-select: text; user-select: text; }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+            padding-bottom: 70px;
+            padding-bottom: calc(70px + env(safe-area-inset-bottom));
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+        
+        /* ===== HEADER ===== */
+        header {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            color: white;
+            padding: 16px 0;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-bottom: 4px solid #e74c3c;
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        
+        .logo { font-size: 24px; }
+        h1 { font-size: 22px; font-weight: 700; }
+        .subtitle {
+            text-align: center;
+            margin: 12px 0 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        /* ===== SEARCH BAR ===== */
+        .search-bar {
+            display: flex;
+            margin: 16px 0;
+            gap: 8px;
+            background: white;
+            padding: 8px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+        
+        .search-bar input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 15px;
+        }
+        
+        .search-bar button {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            min-width: 70px;
+        }
+        
+        /* ===== CONTENT LAYOUT - DESKTOP DEFAULT ===== */
+        .content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .parking-list {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .section-title {
+            font-size: 19px;
+            margin: 10px 0 15px;
+            color: #2c3e50;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e74c3c;
+            display: inline-block;
+        }
+        
+        .parking-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+            border-right: 4px solid #3498db;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .parking-item:active { background: #f8f9ff; }
+        
+        .parking-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #2c3e50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .parking-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .info-item { display: flex; align-items: center; gap: 4px; color: #555; }
+        
+        .available, .full, .limited {
+            font-weight: bold;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        .available { color: #27ae60; background: rgba(39, 174, 96, 0.12); }
+        .full { color: #e74c3c; background: rgba(231, 76, 60, 0.12); }
+        .limited { color: #f39c12; background: rgba(243, 156, 18, 0.12); }
+        
+        /* ===== MAP CONTAINER ===== */
+        .map-toggle-btn {
+            display: none;
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            cursor: pointer;
+        }
+        
+        .map-container {
+            height: 400px;
+            background-color: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+        }
+        
+        #map { width: 100%; height: 100%; }
+        
+        /* ===== MODAL ===== */
+        .details-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: white;
+            width: 100%;
+            max-width: 550px;
+            border-radius: 20px 20px 0 0;
+            padding: 24px 20px 30px;
+            position: relative;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+        
+        @media (min-width: 768px) {
+            .details-modal { align-items: center; }
+            .modal-content { border-radius: 16px; }
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            font-size: 26px;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #f1f2f6;
+        }
+        
+        .modal-title {
+            font-size: 21px;
+            margin-bottom: 18px;
+            color: #2c3e50;
+            padding-left: 40px;
+            font-weight: 700;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #f1f2f6;
+            font-size: 15px;
+        }
+        
+        .info-label { color: #7f8c8d; }
+        .info-value { color: #2c3e50; font-weight: 600; }
+        
+        .reserve-btn {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 17px;
+            font-weight: 700;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .reserve-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        /* ===== FOOTER NAV (YouTube-style) ===== */
+        .app-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e1e8ed;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 8px 0 calc(12px + env(safe-area-inset-bottom));
+            z-index: 200;
+            box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            color: #7f8c8d;
+            font-size: 11px;
+            text-decoration: none;
+        }
+        
+        .nav-item.active { color: #3498db; background: rgba(52, 152, 219, 0.1); }
+        .nav-icon { font-size: 22px; }
+        
+        /* ===== 📱 MOBILE-ONLY STYLES (max-width: 767px) ===== */
+        @media (max-width: 767px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .parking-list {
+                order: 1;
+                min-width: 100%;
+            }
+            
+            .map-toggle-btn {
+                display: block;
+            }
+            
+            .map-container {
+                height: 0;
+                overflow: hidden;
+                transition: height 0.3s ease;
+            }
+            
+            .map-container.expanded {
+                height: 300px;
+            }
+            
+            .modal-content {
+                border-radius: 16px 16px 0 0;
+                margin: 0 12px;
+            }
+            
+            .nav-text { display: none; }
+            .nav-item { min-width: 50px; }
+        }
+        
+        /* ===== DESKTOP: Hide app footer, show classic footer ===== */
+        @media (min-width: 1024px) {
+            .app-footer { display: none; }
+            body { padding-bottom: 0; }
+            .footer {
+                text-align: center;
+                margin-top: 40px;
+                padding: 24px;
+                color: #7f8c8d;
+                border-top: 1px solid #ecf0f1;
+                display: block;
+            }
+        }
+        .footer { display: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">🅿️</div>
+                <h1>مواقف السيارات في دمشق</h1>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <p class="subtitle">ابحث عن أقرب موقف سيارات متاح في دمشق واحجز مكانك بسهولة</p>
+        
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="ابحث باسم الموقف أو المنطقة..." autocomplete="off">
+            <button id="searchBtn">بحث</button>
+        </div>
+        
+        <div class="content">
+            <div class="parking-list">
+                <button class="map-toggle-btn" id="mapToggleBtn">🗺️ عرض الخريطة</button>
+                
+                <div class="map-container" id="mapContainer">
+                    <div id="map"></div>
+                </div>
+
+                <h2 class="section-title">مواقف السيارات المتاحة</h2>
+                <div id="parkingList"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Details Modal -->
+    <div class="details-modal" id="detailsModal">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModal">&times;</span>
+            <h2 class="modal-title" id="modalTitle">اسم الموقف</h2>
+            <div class="modal-info">
+                <div class="info-row"><span class="info-label">السعة الكلية:</span><span class="info-value" id="modalTotal">0</span></div>
+                <div class="info-row"><span class="info-label">الأماكن المتاحة:</span><span class="info-value" id="modalAvailable">0</span></div>
+                <div class="info-row"><span class="info-label">سعر الساعة:</span><span class="info-value" id="modalPrice">0</span></div>
+                <div class="info-row"><span class="info-label">ساعات العمل:</span><span class="info-value" id="modalHours">24/7</span></div>
+                <div class="info-row"><span class="info-label">العنوان:</span><span class="info-value" id="modalAddress">...</span></div>
+            </div>
+            <button class="reserve-btn" id="reserveBtn">احجز مكان</button>
+        </div>
+    </div>
+    
+    <!-- YouTube-Style Footer Nav -->
+    <nav class="app-footer">
+        <a href="#" class="nav-item active" data-page="home"><span class="nav-icon">🏠</span><span class="nav-text">الرئيسية</span></a>
+        <a href="#" class="nav-item" data-page="map"><span class="nav-icon">🗺️</span><span class="nav-text">الخريطة</span></a>
+        <a href="#" class="nav-item" data-page="favorites"><span class="nav-icon">❤️</span><span class="nav-text">المفضلة</span></a>
+        <a href="#" class="nav-item" data-page="history"><span class="nav-icon">🕒</span><span class="nav-text">السجل</span></a>
+        <a href="#" class="nav-item" data-page="profile"><span class="nav-icon">👤</span><span class="nav-text">حسابي</span></a>
+    </nav>
+    
+    <div class="footer">
+        <div class="container">
+            <p>تطبيق مواقف السيارات في دمشق &copy; 2026 - جميع الحقوق محفوظة</p>
+        </div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script>
+        const parkingData = [
+            { id: 1, name: "موقف ساحة الأمويين", address: "ساحة الأمويين، وسط مدينة دمشق", totalSpaces: 150, availableSpaces: 32, pricePerHour: 500, hours: "24/7", lat: 33.5138, lng: 36.2765 },
+            { id: 2, name: "موقف الحرمون", address: "شارع الحرمون، المزة", totalSpaces: 80, availableSpaces: 0, pricePerHour: 300, hours: "06:00 - 00:00", lat: 33.4809, lng: 36.2586 },
+            { id: 3, name: "موقف الجامعة", address: "جامعة دمشق، البرامكة", totalSpaces: 200, availableSpaces: 45, pricePerHour: 200, hours: "07:00 - 20:00", lat: 33.5102, lng: 36.2784 },
+            { id: 4, name: "موقف الشعلان", address: "حي الشعلان، أبو رمانة", totalSpaces: 60, availableSpaces: 12, pricePerHour: 400, hours: "24/7", lat: 33.5215, lng: 36.2932 },
+            { id: 5, name: "موقف المطار", address: "مطار دمشق الدولي", totalSpaces: 300, availableSpaces: 120, pricePerHour: 600, hours: "24/7", lat: 33.4144, lng: 36.5200 },
+            { id: 6, name: "موقف التكية السليمانية", address: "التكية السليمانية، المرجة", totalSpaces: 100, availableSpaces: 25, pricePerHour: 350, hours: "08:00 - 22:00", lat: 33.5147, lng: 36.3065 },
+            { id: 7, name: "موقف صحيفة تشرين", address: "جادة صحيفة تشرين، المالكي", totalSpaces: 70, availableSpaces: 5, pricePerHour: 450, hours: "07:00 - 23:00", lat: 33.5180, lng: 36.2760 },
+            { id: 8, name: "موقف شارع بغداد", address: "شارع بغداد، الجسر الأبيض", totalSpaces: 90, availableSpaces: 40, pricePerHour: 300, hours: "24/7", lat: 33.5210, lng: 36.2900 }
+        ];
+        
+        const parkingList = document.getElementById('parkingList');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const detailsModal = document.getElementById('detailsModal');
+        const closeModal = document.getElementById('closeModal');
+        const reserveBtn = document.getElementById('reserveBtn');
+        const mapToggleBtn = document.getElementById('mapToggleBtn');
+        const mapContainer = document.getElementById('mapContainer');
+        
+        let map, markers = [];
+        let currentParking = null;
+        
+        function getAvailabilityStatus(available, total) {
+            if (available === 0) return 'full';
+            if (available < total * 0.2) return 'limited';
+            return 'available';
+        }
+        
+        function formatPrice(price) {
+            return `${price.toLocaleString('ar-SY')} ل.س`;
+        }
+        
+        function initMap() {
+            map = L.map('map', { attributionControl: false }).setView([33.5138, 36.2765], 12);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+            
+            parkingData.forEach(parking => {
+                const marker = L.marker([parking.lat, parking.lng]).addTo(map);
+                marker.bindPopup(`
+                    <b>${parking.name}</b><br>
+                    ${parking.address}<br>
+                    <span style="color:${parking.availableSpaces > 0 ? '#27ae60' : '#e74c3c'}">
+                        ${parking.availableSpaces} متاح من ${parking.totalSpaces}
+                    </span>
+                `);
+                marker.parkingId = parking.id;
+                markers.push(marker);
+            });
+            
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                const bounds = group.getBounds().pad(0.1);
+                map.fitBounds(bounds, {
+                    padding: [20, 20],
+                    maxZoom: 14
+                });
+            } else {
+                map.setView([33.5138, 36.2765], 13);
+            }
+
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
+        }
+        
+        function displayParkingList(parkings) {
+            parkingList.innerHTML = '';
+            
+            if (parkings.length === 0) {
+                parkingList.innerHTML = `
+                    <div class="parking-item" style="text-align:center;padding:30px;background:#f8f9fa">
+                        <p style="font-size:16px;color:#7f8c8d">لا توجد مواقف مطابقة للبحث</p>
+                        <p style="margin-top:8px;font-size:13px;color:#95a5a6">جرب استخدام كلمات بحث أخرى</p>
+                    </div>`;
+                return;
+            }
+            
+            parkings.forEach(parking => {
+                const status = getAvailabilityStatus(parking.availableSpaces, parking.totalSpaces);
+                const statusText = {
+                    'available': `${parking.availableSpaces} متاحة`,
+                    'limited': `${parking.availableSpaces} متاحة (محدود)`,
+                    'full': 'ممتلئ'
+                }[status];
+                
+                const item = document.createElement('div');
+                item.className = 'parking-item';
+                item.innerHTML = `
+                    <div class="parking-name"><span>🅿️</span>${parking.name}</div>
+                    <div class="parking-info">
+                        <div class="info-item"><span>📍</span><span>${parking.address}</span></div>
+                    </div>
+                    <div class="parking-info">
+                        <div class="info-item"><span>🚗</span><span>${parking.totalSpaces} مكان</span></div>
+                        <div class="${status}">${statusText}</div>
+                    </div>
+                    <div class="parking-info">
+                        <div class="info-item"><span>💰</span><span>${formatPrice(parking.pricePerHour)}/ساعة</span></div>
+                        <div class="info-item"><span>🕒</span><span>${parking.hours}</span></div>
+                    </div>
+                `;
+                item.addEventListener('click', () => {
+                    showParkingDetails(parking);
+                    if (window.innerWidth < 768 && map) {
+                        map.setView([parking.lat, parking.lng], 14);
+                        if (!mapContainer.classList.contains('expanded')) {
+                            mapContainer.classList.add('expanded');
+                            mapToggleBtn.textContent = '🔼 إخفاء الخريطة';
+                            setTimeout(() => map.invalidateSize(), 300);
+                        }
+                    }
+                });
+                parkingList.appendChild(item);
+            });
+        }
+        
+        function showParkingDetails(parking) {
+            currentParking = parking;
+            document.getElementById('modalTitle').textContent = parking.name;
+            document.getElementById('modalTotal').textContent = parking.totalSpaces;
+            document.getElementById('modalAvailable').textContent = parking.availableSpaces;
+            document.getElementById('modalPrice').textContent = formatPrice(parking.pricePerHour) + '/ساعة';
+            document.getElementById('modalHours').textContent = parking.hours;
+            document.getElementById('modalAddress').textContent = parking.address;
+            
+            if (parking.availableSpaces > 0) {
+                reserveBtn.textContent = 'احجز مكان الآن';
+                reserveBtn.disabled = false;
+            } else {
+                reserveBtn.textContent = 'لا توجد أماكن متاحة';
+                reserveBtn.disabled = true;
+            }
+            
+            detailsModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeDetailsModal() {
+            detailsModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        function searchParkings() {
+            const term = searchInput.value.toLowerCase().trim();
+            const filtered = term === '' ? parkingData : parkingData.filter(p => 
+                p.name.toLowerCase().includes(term) || 
+                p.address.toLowerCase().includes(term)
+            );
+            displayParkingList(filtered);
+            
+            if (map) {
+                markers.forEach(marker => {
+                    const parking = parkingData.find(p => p.id === marker.parkingId);
+                    if (!parking) return;
+                    
+                    if (filtered.some(fp => fp.id === parking.id)) {
+                        if (!map.hasLayer(marker)) marker.addTo(map);
+                    } else {
+                        if (map.hasLayer(marker)) map.removeLayer(marker);
+                    }
+                });
+            }
+        }
+        
+        function reserveParking() {
+            if (!currentParking || currentParking.availableSpaces <= 0) return;
+            
+            currentParking.availableSpaces--;
+            showParkingDetails(currentParking);
+            displayParkingList(parkingData);
+            
+            const marker = markers.find(m => m.parkingId === currentParking.id);
+            if (marker) {
+                marker.setPopupContent(`
+                    <b>${currentParking.name}</b><br>
+                    ${currentParking.address}<br>
+                    <span style="color:${currentParking.availableSpaces > 0 ? '#27ae60' : '#e74c3c'}">
+                        ${currentParking.availableSpaces} متاح من ${currentParking.totalSpaces}
+                    </span>
+                `);
+            }
+        }
+        
+        mapToggleBtn.addEventListener('click', () => {
+            const isExpanded = mapContainer.classList.toggle('expanded');
+            mapToggleBtn.textContent = isExpanded ? '🔼 إخفاء الخريطة' : '🗺️ عرض الخريطة';
+            if (map) setTimeout(() => map.invalidateSize(), 300);
+        });
+        
+        searchBtn.addEventListener('click', searchParkings);
+        searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') searchParkings(); });
+        closeModal.addEventListener('click', closeDetailsModal);
+        reserveBtn.addEventListener('click', reserveParking);
+        detailsModal.addEventListener('click', (e) => { if (e.target === detailsModal) closeDetailsModal(); });
+        
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                const page = item.dataset.page;
+                if (page === 'map' && window.innerWidth < 768) {
+                    if (!mapContainer.classList.contains('expanded')) {
+                        mapContainer.classList.add('expanded');
+                        mapToggleBtn.textContent = '🔼 إخفاء الخريطة';
+                        if (map) setTimeout(() => map.invalidateSize(), 300);
+                    }
+                    const mapSection = document.getElementById('mapContainer');
+                    if (mapSection) {
+                        mapSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                }
+            });
+        });
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            displayParkingList(parkingData);
+            setTimeout(initMap, 100);
+        });
+        
+        window.addEventListener('resize', () => {
+            if (map) map.invalidateSize();
+        });
+    </script>
+</body>
+</html>

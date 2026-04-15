@@ -1,0 +1,799 @@
+// ─── Bootstrap Variable Overrides ────────────────────────────────────────────
+$font-family-base:          'Cairo', sans-serif;
+$font-size-base:            0.9375rem;   // 15px
+$line-height-base:          1.7;         // Arabic needs breathing room
+
+$border-radius:             0.5rem;
+$border-radius-sm:          0.375rem;
+$border-radius-lg:          0.75rem;
+$border-radius-xl:          1rem;
+$border-radius-xxl:         1.5rem;
+
+$card-border-width:         0;
+$card-border-radius:        $border-radius-lg;
+$card-box-shadow:           0 1px 4px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04);
+
+$input-border-radius:       $border-radius;
+$input-border-radius-lg:    $border-radius;
+$input-padding-y:           0.55rem;
+$input-padding-x:           0.875rem;
+
+$btn-border-radius:         $border-radius;
+$btn-border-radius-lg:      $border-radius;
+$btn-padding-y-lg:          0.6rem;
+$btn-padding-x-lg:          1.5rem;
+
+$table-cell-padding-y:      0.875rem;
+$table-cell-padding-x:      1rem;
+$table-border-color:        #f1f5f9;
+
+$modal-border-radius:       $border-radius-xl;
+$modal-content-border-width: 0;
+$modal-content-box-shadow-xs: 0 1rem 3rem rgba(0,0,0,.175);
+
+$badge-border-radius:       50rem;
+$badge-padding-y:           .35em;
+$badge-padding-x:           .75em;
+$badge-font-size:           .8em;
+$badge-font-weight:         600;
+
+$enable-negative-margins:   true;
+
+@import "bootstrap/scss/bootstrap";
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+// ─── CSS Variables ────────────────────────────────────────────────────────────
+:root {
+    --sidebar-width:        260px;
+    --sidebar-bg:           #0f172a;
+    --sidebar-border:       rgba(255,255,255,.06);
+    --sidebar-text:         #94a3b8;
+    --sidebar-text-hover:   #f1f5f9;
+    --sidebar-hover-bg:     rgba(255,255,255,.07);
+    --sidebar-active-bg:    rgba(99,102,241,.25);
+    --sidebar-active-text:  #a5b4fc;
+    --sidebar-active-border:#6366f1;
+    --topbar-height:        62px;
+    --topbar-bg:            #ffffff;
+    --app-bg:               #f1f5f9;
+    --mobile-nav-h:         56px;
+    --card-bg:              #ffffff;
+    --text-primary:         #0f172a;
+    --text-muted:           #64748b;
+    --border-color:         #e2e8f0;
+}
+
+// ─── Base ─────────────────────────────────────────────────────────────────────
+body {
+    font-family: 'Cairo', sans-serif;
+    color: var(--text-primary);
+    background-color: var(--app-bg);
+}
+
+// ─── App Layout (Sidebar + Main) ──────────────────────────────────────────────
+.app-layout {
+    display: flex;
+    min-height: 100vh;
+    // In RTL flex-direction:row, the first child (sidebar) appears on the RIGHT
+}
+
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
+.app-sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    background: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+    scrollbar-width: none;
+    transition: transform .3s ease;
+    z-index: 1040;
+
+    &::-webkit-scrollbar { display: none; }
+}
+
+.sidebar-logo {
+    padding: 1.375rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    border-bottom: 1px solid var(--sidebar-border);
+    text-decoration: none;
+
+    .logo-icon {
+        width: 38px;
+        height: 38px;
+        background: #6366f1;
+        border-radius: .5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.25rem;
+        color: #fff;
+    }
+
+    .logo-text {
+        color: #f1f5f9;
+        font-size: 1.05rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .logo-sub {
+        font-size: .72rem;
+        color: var(--sidebar-text);
+        font-weight: 400;
+    }
+}
+
+.sidebar-section {
+    padding: 1.25rem 1.25rem .25rem;
+    font-size: .68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: rgba(255,255,255,.25);
+}
+
+.sidebar-nav {
+    padding: .5rem 0;
+    flex: 1;
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: .625rem 1rem;
+    margin: .1rem .625rem;
+    border-radius: .5rem;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: .9rem;
+    font-weight: 500;
+    transition: background .15s, color .15s;
+    border-inline-start: 2px solid transparent;
+
+    .sidebar-icon {
+        width: 1.125rem;
+        text-align: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    &:hover {
+        background: var(--sidebar-hover-bg);
+        color: var(--sidebar-text-hover);
+    }
+
+    &.active {
+        background: var(--sidebar-active-bg);
+        color: var(--sidebar-active-text);
+        border-inline-start-color: var(--sidebar-active-border);
+    }
+}
+
+.sidebar-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--sidebar-border);
+    margin-top: auto;
+
+    .user-name {
+        font-size: .85rem;
+        font-weight: 600;
+        color: #f1f5f9;
+        line-height: 1.2;
+    }
+
+    .user-role {
+        font-size: .72rem;
+        color: var(--sidebar-text);
+    }
+
+    .user-avatar {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: rgba(99,102,241,.4);
+        color: #a5b4fc;
+        font-weight: 700;
+        font-size: .9rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+}
+
+// ─── Main Body ────────────────────────────────────────────────────────────────
+.app-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+// ─── Topbar ───────────────────────────────────────────────────────────────────
+.app-topbar {
+    height: var(--topbar-height);
+    background: var(--topbar-bg);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+
+    .topbar-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .topbar-actions {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+}
+
+// Sidebar toggle button (mobile)
+.sidebar-toggle {
+    background: none;
+    border: none;
+    padding: .375rem .5rem;
+    color: var(--text-muted);
+    border-radius: .375rem;
+    cursor: pointer;
+    display: none;
+    font-size: 1.25rem;
+
+    &:hover { background: #f1f5f9; color: var(--text-primary); }
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 1039;
+    backdrop-filter: blur(2px);
+}
+
+// ─── App Content ──────────────────────────────────────────────────────────────
+.app-content {
+    padding: 1.5rem;
+    flex: 1;
+}
+
+// ─── Mobile Responsive ───────────────────────────────────────────────────────
+@media (max-width: 991.98px) {
+    .app-sidebar {
+        position: fixed;
+        top: 0;
+        inset-inline-end: 0;   // right in RTL
+        height: 100%;
+        transform: translateX(calc(-1 * var(--sidebar-width)));
+        // In RTL, translateX negative moves LEFT (off screen)
+        // We need to hide it to the right side
+        transform: translateX(100%);
+
+        &.is-open {
+            transform: translateX(0);
+        }
+    }
+
+    .sidebar-overlay.is-open {
+        display: block;
+    }
+
+    .sidebar-toggle {
+        display: flex;
+        align-items: center;
+    }
+}
+
+// ─── Page Header ──────────────────────────────────────────────────────────────
+.page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+
+    .page-title {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0 0 .2rem;
+    }
+
+    .page-subtitle {
+        font-size: .85rem;
+        color: var(--text-muted);
+        margin: 0;
+    }
+}
+
+// ─── Cards ────────────────────────────────────────────────────────────────────
+.card {
+    border: 0;
+    box-shadow: var(--card-box-shadow, 0 1px 4px rgba(0,0,0,.07));
+}
+
+.card-header {
+    background: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+}
+
+.card-body-padded {
+    padding: 1.25rem;
+}
+
+// Stat card
+.stat-card {
+    transition: transform .2s ease, box-shadow .2s ease;
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,.1) !important;
+    }
+}
+
+// Hoverable card
+.card-hover {
+    transition: transform .2s ease, box-shadow .2s ease;
+    cursor: pointer;
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,.1) !important;
+    }
+}
+
+// Quick action card
+.quick-card {
+    transition: all .2s ease;
+    text-decoration: none;
+    display: block;
+    border-radius: $border-radius-lg !important;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(0,0,0,.1) !important;
+    }
+
+    .quick-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: $border-radius;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        margin-bottom: .875rem;
+    }
+
+    h6 { font-weight: 700; margin-bottom: .25rem; }
+    small { color: var(--text-muted); }
+}
+
+// ─── Tables ───────────────────────────────────────────────────────────────────
+.app-table {
+    margin: 0;
+
+    thead th {
+        background: #f8fafc;
+        color: var(--text-muted);
+        font-size: .8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .03em;
+        border-bottom: 1px solid var(--border-color);
+        padding: .875rem 1rem;
+        white-space: nowrap;
+    }
+
+    tbody td {
+        padding: .875rem 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #f8fafc;
+        color: var(--text-primary);
+        font-size: .9rem;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td { background: #f8fafc; }
+}
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+.badge-soft-success {
+    background: rgba(22, 163, 74, .12);
+    color: #15803d;
+}
+.badge-soft-danger {
+    background: rgba(220, 53, 69, .12);
+    color: #b91c1c;
+}
+.badge-soft-warning {
+    background: rgba(217, 119, 6, .12);
+    color: #92400e;
+}
+.badge-soft-info {
+    background: rgba(6, 182, 212, .12);
+    color: #0e7490;
+}
+.badge-soft-primary {
+    background: rgba(99, 102, 241, .12);
+    color: #4338ca;
+}
+.badge-soft-secondary {
+    background: rgba(100, 116, 139, .12);
+    color: #475569;
+}
+
+// ─── Forms ───────────────────────────────────────────────────────────────────
+.form-control, .form-select {
+    font-family: 'Cairo', sans-serif;
+    border-color: var(--border-color);
+    color: var(--text-primary);
+
+    &:focus {
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+    }
+}
+
+.form-label {
+    font-weight: 600;
+    font-size: .875rem;
+    color: var(--text-primary);
+    margin-bottom: .375rem;
+}
+
+// ─── Auth Layout ──────────────────────────────────────────────────────────────
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: linear-gradient(145deg, #eef2ff 0%, #f0fdf4 50%, #f0f9ff 100%);
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle at 20% 80%, rgba(99,102,241,.07) 0%, transparent 50%),
+                          radial-gradient(circle at 80% 20%, rgba(16,185,129,.06) 0%, transparent 50%);
+        pointer-events: none;
+    }
+}
+
+.auth-box {
+    width: 100%;
+    max-width: 460px;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-brand {
+    text-align: center;
+    margin-bottom: 1.75rem;
+
+    .brand-icon {
+        width: 54px;
+        height: 54px;
+        background: #6366f1;
+        border-radius: .875rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #fff;
+        margin-bottom: .75rem;
+        box-shadow: 0 4px 14px rgba(99,102,241,.4);
+    }
+
+    h1 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin: 0 0 .25rem;
+    }
+
+    p {
+        color: var(--text-muted);
+        font-size: .875rem;
+        margin: 0;
+    }
+}
+
+.auth-card {
+    background: #fff;
+    border-radius: $border-radius-xl;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08), 0 1px 4px rgba(0,0,0,.04);
+    padding: 2rem;
+}
+
+.auth-divider {
+    text-align: center;
+    position: relative;
+    margin: 1.25rem 0;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        inset-inline-start: 0;
+        inset-inline-end: 0;
+        border-top: 1px solid var(--border-color);
+    }
+
+    span {
+        background: #fff;
+        padding: 0 .75rem;
+        color: var(--text-muted);
+        font-size: .8rem;
+        position: relative;
+    }
+}
+
+// ─── Public (Index) Page ──────────────────────────────────────────────────────
+.public-header {
+    background: var(--sidebar-bg);
+    padding: 1.25rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 2px 12px rgba(0,0,0,.15);
+}
+
+.parking-card {
+    transition: all .18s ease;
+    border: 1px solid transparent;
+    cursor: pointer;
+
+    &:hover {
+        border-color: rgba(99,102,241,.3);
+        background: #fafbff;
+        transform: translateX(2px); // RTL: hover nudges toward inline-end (left)
+    }
+
+    &.active-card {
+        border-color: #6366f1;
+        background: #f5f3ff;
+    }
+}
+
+// availability badge
+.avail-full    { background: rgba(239,68,68,.1);  color: #dc2626; }
+.avail-limited { background: rgba(245,158,11,.1); color: #b45309; }
+.avail-open    { background: rgba(16,185,129,.1); color: #059669; }
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+.fw-800 { font-weight: 800 !important; }
+.text-xs { font-size: .75rem !important; }
+.text-sm { font-size: .85rem !important; }
+.lh-sm   { line-height: 1.35 !important; }
+
+.rounded-12 { border-radius: .75rem !important; }
+.rounded-16 { border-radius: 1rem !important; }
+
+.bg-indigo-soft { background: rgba(99,102,241,.1) !important; }
+.text-indigo    { color: #6366f1 !important; }
+.border-indigo  { border-color: #6366f1 !important; }
+
+// ─── Desktop Polish ───────────────────────────────────────────────────────────
+@media (min-width: 992px) {
+    .app-sidebar {
+        box-shadow: -4px 0 28px rgba(0,0,0,.14);
+    }
+}
+
+@media (min-width: 768px) {
+    .app-topbar {
+        backdrop-filter: blur(8px);
+        background: rgba(255,255,255,.96);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 28px rgba(0,0,0,.09) !important;
+    }
+}
+
+// ─── Mobile App Shell ─────────────────────────────────────────────────────────
+
+// ── Bottom Navigation Bar (YouTube-style) ─────────────────────────────────
+.mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
+    height: 56px;
+    background: #ffffff;
+    border-top: 1px solid #e5e5e5;
+    z-index: 1050;
+    display: none;
+    align-items: stretch;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+
+    .mob-nav-item {
+        flex: 1;
+        display: flex !important;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        height: 100%;
+        color: #909090 !important;
+        text-decoration: none !important;
+        font-size: .64rem;
+        font-weight: 600;
+        font-family: 'Cairo', sans-serif;
+        transition: color .15s;
+        cursor: pointer;
+        border: none;
+        background: none !important;
+        padding: 0;
+        margin: 0;
+        -webkit-tap-highlight-color: transparent;
+        outline: none;
+        box-shadow: none;
+
+        i {
+            font-size: 1.4rem;
+            line-height: 1;
+            display: block;
+        }
+
+        span {
+            display: block;
+            line-height: 1;
+        }
+
+        &.active {
+            color: #0f172a !important;
+        }
+
+        &:hover:not(.active) { color: #474747 !important; }
+
+        &:active { opacity: .6; }
+    }
+}
+
+// ── Mobile Rules (<768px) ──────────────────────────────────────────────────
+@media (max-width: 767px) {
+
+    /* Show bottom nav */
+    .mobile-bottom-nav { display: flex !important; }
+
+    /* Shared content bottom padding */
+    .mob-nav-pad { padding-bottom: calc(var(--mobile-nav-h) + .5rem) !important; }
+
+    /* ── Admin / Operator layout ────────────────────────────────────────── */
+    .sidebar-toggle { display: none !important; }
+    .app-layout     { display: block; }
+
+    .app-body {
+        padding-bottom: var(--mobile-nav-h);
+        min-height: 100svh;
+    }
+
+    .app-topbar {
+        height: 54px;
+        padding: 0 1rem;
+        backdrop-filter: none;
+        background: #ffffff;
+
+        .topbar-title { font-size: .9rem; }
+    }
+
+    .app-content { padding: .875rem .875rem 1.5rem; }
+
+    /* Stat cards 2-per-row on mobile */
+    .app-content .row > .col-xl-2 {
+        flex: 0 0 50%;
+        max-width: 50%;
+    }
+
+    /* ── Public page ────────────────────────────────────────────────────── */
+    .public-header  { padding: .625rem 0; }
+    .mob-hero-compact { padding: .875rem 0 1rem !important; }
+
+    /* Section switching — hide inactive section */
+    .mob-hidden { display: none !important; }
+
+    /* Remove sticky on list card */
+    .mob-sticky-desktop { position: static !important; }
+
+    /* List scrolls with page, no fixed height */
+    #parkingList { max-height: none !important; }
+
+    /* Map fills available viewport */
+    #map {
+        height: calc(100vh - 230px) !important;
+        height: calc(100svh - 230px) !important;
+        min-height: 280px;
+    }
+}
+
+// ── Desktop overrides ─────────────────────────────────────────────────────
+@media (min-width: 768px) {
+    .mobile-bottom-nav { display: none !important; }
+}
+
+// ── RTL input-group border-radius fix ─────────────────────────────────────
+// Bootstrap 5 ships LTR-only border-radius logic for .input-group.
+// These overrides flip the rounded corners for dir="rtl" pages.
+//
+// ── RTL icon-spacing fix ───────────────────────────────────────────────────
+// Bootstrap SCSS compiles me-* to physical margin-right and ms-* to
+// margin-left. In an RTL layout the icon sits on the RIGHT and the text
+// on the LEFT, so margin-right pushes AWAY from the text. We swap the
+// physical sides so me-* / ms-* behave as Bootstrap's logical properties
+// intend (margin-inline-end / margin-inline-start).
+[dir="rtl"] {
+    .me-1 { margin-right: 0 !important; margin-left: .25rem !important; }
+    .me-2 { margin-right: 0 !important; margin-left: .5rem  !important; }
+    .me-3 { margin-right: 0 !important; margin-left: 1rem   !important; }
+    .me-4 { margin-right: 0 !important; margin-left: 1.5rem !important; }
+    .me-5 { margin-right: 0 !important; margin-left: 3rem   !important; }
+    .ms-1 { margin-left: 0 !important; margin-right: .25rem !important; }
+    .ms-2 { margin-left: 0 !important; margin-right: .5rem  !important; }
+    .ms-3 { margin-left: 0 !important; margin-right: 1rem   !important; }
+    .ms-4 { margin-left: 0 !important; margin-right: 1.5rem !important; }
+    .ms-5 { margin-left: 0 !important; margin-right: 3rem   !important; }
+    .ms-auto { margin-left: 0 !important; margin-right: auto !important; }
+    .me-auto { margin-right: 0 !important; margin-left: auto !important; }
+
+    // First child (icon / prepend) sits visually on the RIGHT in RTL
+    .input-group > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-floating) {
+        border-top-right-radius: var(--bs-border-radius) !important;
+        border-bottom-right-radius: var(--bs-border-radius) !important;
+        border-top-left-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+    }
+    // Last child (input / append) sits visually on the LEFT in RTL
+    .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+        margin-right: -1px;
+        margin-left: 0;
+        border-top-left-radius: var(--bs-border-radius) !important;
+        border-bottom-left-radius: var(--bs-border-radius) !important;
+        border-top-right-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+    // Same for -sm variant (used in admin search bars)
+    .input-group-sm > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-floating),
+    .input-group > .form-control-sm:not(:last-child) {
+        border-top-right-radius: var(--bs-border-radius-sm) !important;
+        border-bottom-right-radius: var(--bs-border-radius-sm) !important;
+        border-top-left-radius: 0 !important;
+        border-bottom-left-radius: 0 !important;
+    }
+    .input-group-sm > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback),
+    .input-group > .btn-sm:not(:first-child) {
+        margin-right: -1px;
+        margin-left: 0;
+        border-top-left-radius: var(--bs-border-radius-sm) !important;
+        border-bottom-left-radius: var(--bs-border-radius-sm) !important;
+        border-top-right-radius: 0 !important;
+        border-bottom-right-radius: 0 !important;
+    }
+}

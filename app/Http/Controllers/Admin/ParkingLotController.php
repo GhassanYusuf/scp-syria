@@ -1,0 +1,67 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreParkingLotRequest;
+use App\Models\ParkingLot;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+
+class ParkingLotController extends Controller
+{
+    public function index(Request $request): \Illuminate\View\View
+    {
+        $parkingLots = ParkingLot::withCount(['bookings as active_bookings_count' => fn($q) => $q->where('status', 'active')])
+            ->when($request->search, fn($q) => $q->search($request->search))
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('admin.parking-lots.index', compact('parkingLots'));
+    }
+
+    public function show(ParkingLot $parkingLot): JsonResponse
+    {
+        $parkingLot->loadCount(['bookings as active_bookings_count' => fn($q) => $q->where('status', 'active')]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $parkingLot
+        ]);
+    }
+
+    public function store(StoreParkingLotRequest $request): JsonResponse
+    {
+        $parkingLot = ParkingLot::create($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم إضافة موقف السيارات بنجاح',
+            'data' => $parkingLot->loadCount(['bookings as active_bookings_count' => fn($q) => $q->where('status', 'active')])
+        ]);
+    }
+
+    public function update(StoreParkingLotRequest $request, ParkingLot $parkingLot): JsonResponse
+    {
+        $parkingLot->update($request->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم تحديث موقف السيارات بنجاح',
+            'data' => $parkingLot->loadCount(['bookings as active_bookings_count' => fn($q) => $q->where('status', 'active')])
+        ]);
+    }
+
+    public function toggleStatus(ParkingLot $parkingLot): JsonResponse
+    {
+        $parkingLot->update(['is_active' => !$parkingLot->is_active]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $parkingLot->is_active ? 'تم تفعيل الموقف' : 'تم إلغاء تفعيل الموقف',
+            'data' => ['is_active' => $parkingLot->is_active]
+        ]);
+    }
+}
+?>
+
