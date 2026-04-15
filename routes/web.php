@@ -29,6 +29,7 @@ Route::prefix('admin')->middleware('admin')->name('admin.')->group(function () {
     Route::post('/parking-lots', [\App\Http\Controllers\Admin\ParkingLotController::class, 'store'])->name('parking-lots.store');
     Route::put('/parking-lots/{parkingLot}', [\App\Http\Controllers\Admin\ParkingLotController::class, 'update'])->name('parking-lots.update');
     Route::post('/parking-lots/{parkingLot}/toggle', [\App\Http\Controllers\Admin\ParkingLotController::class, 'toggleStatus'])->name('parking-lots.toggle');
+    Route::delete('/parking-lots/{parkingLot}', [\App\Http\Controllers\Admin\ParkingLotController::class, 'destroy'])->name('parking-lots.destroy');
 
     // Active Bookings
     Route::get('/bookings/active', [\App\Http\Controllers\Admin\BookingController::class, 'activeIndex'])->name('bookings.active');

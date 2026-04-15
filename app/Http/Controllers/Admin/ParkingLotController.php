@@ -68,6 +68,29 @@ class ParkingLotController extends Controller
         ]);
     }
 
+    public function destroy(ParkingLot $parkingLot): JsonResponse
+    {
+        // Block deletion if there are active bookings
+        $activeCount = $parkingLot->bookings()->where('status', 'active')->count();
+        if ($activeCount > 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "لا يمكن الحذف — يوجد {$activeCount} حجز نشط في هذا الموقف",
+            ], 422);
+        }
+
+        if ($parkingLot->image) {
+            Storage::disk('public')->delete($parkingLot->image);
+        }
+
+        $parkingLot->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حذف الموقف بنجاح',
+        ]);
+    }
+
     public function toggleStatus(ParkingLot $parkingLot): JsonResponse
     {
         $parkingLot->update(['is_active' => !$parkingLot->is_active]);

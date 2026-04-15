@@ -143,6 +143,12 @@
                                     title="{{ $lot->is_active ? 'تعطيل' : 'تفعيل' }}">
                                 <i class="bi {{ $lot->is_active ? 'bi-slash-circle' : 'bi-check-circle' }}" style="font-size:.8rem;"></i>
                             </button>
+                            <button class="btn btn-sm"
+                                    style="background:rgba(239,68,68,.08);color:#dc2626;border:none;border-radius:.375rem;width:30px;height:30px;padding:0;"
+                                    onclick="deleteLot({{ $lot->id }}, '{{ addslashes($lot->name) }}')"
+                                    title="حذف">
+                                <i class="bi bi-trash3" style="font-size:.8rem;"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -489,6 +495,28 @@ document.getElementById('searchInput').addEventListener('keypress', e => {
 function doSearch() {
     const t = document.getElementById('searchInput').value;
     window.location.href = `/admin/parking-lots?search=${encodeURIComponent(t)}`;
+}
+
+async function deleteLot(id, name) {
+    if (!confirm(`حذف الموقف "${name}"؟\nسيتم حذف جميع بيانات الموقف نهائياً.`)) return;
+
+    try {
+        const res  = await fetch(`/admin/parking-lots/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'Accept': 'application/json',
+            }
+        });
+        const data = await res.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'تعذّر الحذف');
+        }
+    } catch {
+        alert('خطأ في الاتصال');
+    }
 }
 </script>
 @endpush
