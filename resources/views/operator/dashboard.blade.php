@@ -2,7 +2,7 @@
 @section('title', 'لوحة المشغّل — دمشق باركينغ')
 @section('page-title', 'لوحة المشغّل')
 
-@push('styles')
+@section('styles')
 <style>
     /* ── Portrait lot picker cards ───────────────────────────────────── */
     .lot-portrait-card {
@@ -134,7 +134,7 @@
     .fee-row:last-child { border-bottom:none; }
     .fee-total { display:flex; justify-content:space-between; padding:.625rem 0; border-top:2px solid #e2e8f0; font-weight:800; font-size:1.1rem; color:#0f172a; margin-top:.25rem; }
 </style>
-@endpush
+@endsection
 
 @section('content')
 
