@@ -818,10 +818,18 @@ document.getElementById('receiptModal').addEventListener('hidden.bs.modal', () =
     document.getElementById('paymentProofFile').value = '';
 });
 
-// ── Auto-refresh ───────────────────────────────────────────────────────
+// ── Auto-refresh (pauses while any modal is open) ─────────────────────
 let t = 30;
+let refreshPaused = false;
 const badge = document.getElementById('refresh-badge');
+
+document.querySelectorAll('.modal').forEach(m => {
+    m.addEventListener('show.bs.modal',   () => { refreshPaused = true; });
+    m.addEventListener('hidden.bs.modal', () => { refreshPaused = false; t = 30; });
+});
+
 setInterval(() => {
+    if (refreshPaused) return;
     t--;
     if (badge) badge.textContent = `تحديث بعد ${t}ث`;
     if (t <= 0) location.reload();
