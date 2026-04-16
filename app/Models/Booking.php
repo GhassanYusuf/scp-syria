@@ -26,6 +26,7 @@ class Booking extends Model
         'payment_proof',
         'paid_at',
         'pricing_snapshot',
+        'notes',
     ];
 
     protected $casts = [

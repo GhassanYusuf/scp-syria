@@ -336,10 +336,14 @@ $gradients = [
                         onclick="activateRes({{ $res->id }}, this)">
                     <i class="bi bi-box-arrow-in-right me-1"></i>تسجيل دخول
                 </button>
-                <button class="btn btn-outline-danger btn-sm w-100"
+                <button class="btn btn-outline-danger btn-sm w-100 mb-2"
                         id="checkout-{{ $res->id }}" disabled
                         onclick="openReceipt({{ $res->id }})">
                     <i class="bi bi-receipt me-1"></i>خروج وفاتورة
+                </button>
+                <button class="btn btn-outline-secondary btn-sm w-100"
+                        onclick="openCancelModal({{ $res->id }}, {{ json_encode($res->customer_name ?? '') }}, {{ json_encode($res->phone ?? '') }})">
+                    <i class="bi bi-x-circle me-1"></i>إلغاء الحجز
                 </button>
             </div>
         </div>
@@ -591,6 +595,48 @@ $gradients = [
 </div>
 
 {{-- ══════════════════════════════════════════════════════════════════════
+     CANCEL RESERVATION MODAL
+══════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="cancelResModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+
+            <div class="modal-header text-white border-0"
+                 style="background:linear-gradient(135deg,#7f1d1d,#dc2626);">
+                <h6 class="modal-title fw-bold mb-0" style="font-family:'Cairo',sans-serif;">
+                    <i class="bi bi-x-circle me-2"></i>إلغاء الحجز
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body p-4">
+                <p class="text-muted small mb-3" style="font-family:'Cairo',sans-serif;">
+                    للتحقق من هويتك، أدخل <strong>اسم</strong> صاحب الحجز أو <strong>رقم هاتفه</strong> بالضبط:
+                </p>
+                <input type="text" id="cancelVerifyInput"
+                       class="form-control form-control-lg text-center"
+                       style="border-radius:10px;letter-spacing:1px;"
+                       placeholder="الاسم أو رقم الهاتف"
+                       autocomplete="off">
+                <div id="cancelVerifyHint" class="text-xs mt-2 text-center" style="color:#94a3b8;min-height:1.2em;"></div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 gap-2">
+                <button type="button" class="btn btn-light flex-fill fw-600"
+                        style="font-family:'Cairo',sans-serif;border-radius:10px;"
+                        data-bs-dismiss="modal">تراجع</button>
+                <button type="button" id="cancelResConfirmBtn" disabled
+                        class="btn btn-danger flex-fill fw-bold"
+                        style="font-family:'Cairo',sans-serif;border-radius:10px;">
+                    <i class="bi bi-x-circle me-1"></i>تأكيد الإلغاء
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{{-- ══════════════════════════════════════════════════════════════════════
      ACTIVATE RESERVATION CONFIRM MODAL
 ══════════════════════════════════════════════════════════════════════ --}}
 <div class="modal fade" id="activateConfirmModal" tabindex="-1" aria-hidden="true">
@@ -781,6 +827,81 @@ document.getElementById('activateConfirmBtn').addEventListener('click', async ()
         showToast('خطأ في الاتصال', 'danger');
         btn.innerHTML = orig; btn.disabled = false;
     }
+});
+
+// ── Cancel reservation ────────────────────────────────────────────────
+let cancelBookingId   = null;
+let cancelName        = '';
+let cancelPhone       = '';
+let cancelModal       = null;
+
+function getCancelModal() {
+    if (!cancelModal) cancelModal = new bootstrap.Modal(document.getElementById('cancelResModal'));
+    return cancelModal;
+}
+
+function openCancelModal(id, name, phone) {
+    cancelBookingId = id;
+    cancelName      = (name  || '').trim().toLowerCase();
+    cancelPhone     = (phone || '').trim();
+
+    const input = document.getElementById('cancelVerifyInput');
+    const hint  = document.getElementById('cancelVerifyHint');
+    const btn   = document.getElementById('cancelResConfirmBtn');
+    input.value = '';
+    hint.textContent = '';
+    btn.disabled = true;
+    getCancelModal().show();
+    setTimeout(() => input.focus(), 400);
+}
+
+document.getElementById('cancelVerifyInput').addEventListener('input', function () {
+    const val  = this.value.trim();
+    const btn  = document.getElementById('cancelResConfirmBtn');
+    const hint = document.getElementById('cancelVerifyHint');
+    const nameOk  = cancelName  && val.toLowerCase() === cancelName;
+    const phoneOk = cancelPhone && val             === cancelPhone;
+    const ok = nameOk || phoneOk;
+    btn.disabled = !ok;
+    hint.textContent = ok ? '✓ تم التحقق' : (val.length > 0 ? 'لا يطابق الاسم أو الهاتف' : '');
+    hint.style.color = ok ? '#10b981' : '#ef4444';
+});
+
+document.getElementById('cancelResConfirmBtn').addEventListener('click', async () => {
+    if (!cancelBookingId) return;
+    const btn = document.getElementById('cancelResConfirmBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الإلغاء...';
+
+    try {
+        const fd = new FormData();
+        fd.append('verification', document.getElementById('cancelVerifyInput').value.trim());
+        const res  = await fetch(`/operator/${cancelBookingId}/cancel`, {
+            method: 'POST', headers: { 'X-CSRF-TOKEN': csrf }, body: fd
+        });
+        const data = await res.json();
+        if (data.success) {
+            getCancelModal().hide();
+            const card = document.getElementById('card-res-' + cancelBookingId);
+            if (card) { card.style.transition = 'opacity .4s'; card.style.opacity = '0'; setTimeout(() => card.remove(), 400); }
+            showToast('تم إلغاء الحجز بنجاح', 'success');
+        } else {
+            showToast(data.message || 'حدث خطأ', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>تأكيد الإلغاء';
+        }
+    } catch {
+        showToast('خطأ في الاتصال', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>تأكيد الإلغاء';
+    }
+});
+
+document.getElementById('cancelResModal').addEventListener('hidden.bs.modal', () => {
+    document.getElementById('cancelVerifyInput').value = '';
+    document.getElementById('cancelVerifyHint').textContent = '';
+    document.getElementById('cancelResConfirmBtn').disabled = true;
+    document.getElementById('cancelResConfirmBtn').innerHTML = '<i class="bi bi-x-circle me-1"></i>تأكيد الإلغاء';
 });
 
 // ── Receipt modal ──────────────────────────────────────────────────────

@@ -81,6 +81,7 @@ class ProfileController extends Controller
             'customer_name'    => $user->name,
             'phone'            => $user->phone ?? '',
             'vehicle_plate'    => $request->vehicle_plate,
+            'source'           => 'reservation',
             'start_time'       => $request->start_time,
             'end_time'         => $request->end_time,
             'status'           => 'active',
@@ -101,6 +102,12 @@ class ProfileController extends Controller
             ->latest()
             ->get();
 
+        $pendingDebt = $bookings
+            ->where('status', 'cancelled')
+            ->where('total_fee', '>', 0)
+            ->filter(fn($b) => is_null($b->paid_at))
+            ->sum('total_fee');
+
         $stats = [
             'total'     => $bookings->count(),
             'active'    => $bookings->where('status', 'active')->count(),
@@ -108,6 +115,110 @@ class ProfileController extends Controller
             'cancelled' => $bookings->where('status', 'cancelled')->count(),
         ];
 
-        return view('user.dashboard', compact('bookings', 'stats'));
+        return view('user.dashboard', compact('bookings', 'stats', 'pendingDebt'));
+    }
+
+    // ── Cancel preview — returns fee (or free) ────────────────────────────────
+
+    public function cancelPreview(Booking $booking): \Illuminate\Http\JsonResponse
+    {
+        if ($booking->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
+        }
+        if ($booking->status !== 'active' || $booking->source !== 'reservation') {
+            return response()->json(['success' => false, 'message' => 'لا يمكن إلغاء هذا الحجز'], 400);
+        }
+
+        $isFree = now()->lt($booking->start_time);
+
+        if ($isFree) {
+            return response()->json([
+                'success' => true,
+                'data'    => ['is_free' => true, 'fee' => 0, 'fee_details' => []],
+            ]);
+        }
+
+        $lot      = $booking->parkingLot;
+        $calcEnd  = now()->lt($booking->end_time) ? now() : $booking->end_time;
+        $calc     = $lot->calculateFee($booking->start_time, $calcEnd, $booking->pricing_snapshot);
+
+        return response()->json([
+            'success' => true,
+            'data'    => [
+                'is_free'     => false,
+                'fee'         => $calc['total'],
+                'fee_details' => $calc['details'],
+                'entry_time'  => $booking->start_time->format('Y/m/d H:i'),
+                'cancel_time' => now()->format('Y/m/d H:i'),
+            ],
+        ]);
+    }
+
+    // ── Process cancellation ──────────────────────────────────────────────────
+
+    public function cancelBooking(Request $request, Booking $booking): \Illuminate\Http\JsonResponse
+    {
+        if ($booking->user_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'غير مصرح'], 403);
+        }
+        if ($booking->status !== 'active' || $booking->source !== 'reservation') {
+            return response()->json(['success' => false, 'message' => 'لا يمكن إلغاء هذا الحجز'], 400);
+        }
+
+        $isFree = now()->lt($booking->start_time);
+        $end    = now();
+
+        if ($isFree) {
+            $booking->update(['status' => 'cancelled', 'total_fee' => 0, 'end_time' => $end]);
+            return response()->json(['success' => true, 'message' => 'تم إلغاء الحجز مجاناً']);
+        }
+
+        // After start time — fee applies
+        $lot     = $booking->parkingLot;
+        $calcEnd = $end->lt($booking->end_time) ? $end : $booking->end_time;
+        $calc    = $lot->calculateFee($booking->start_time, $calcEnd, $booking->pricing_snapshot);
+        $type    = $request->input('type'); // 'pay_now' | 'pay_later'
+
+        if ($type === 'pay_now') {
+            $request->validate(['payment_method' => 'required|in:cash,upload']);
+            $proofPath = null;
+            if ($request->hasFile('payment_proof')) {
+                $proofPath = $request->file('payment_proof')->store('payment_proofs', 'public');
+            }
+            $booking->update([
+                'status'         => 'cancelled',
+                'end_time'       => $end,
+                'total_fee'      => $calc['total'],
+                'payment_method' => $request->payment_method,
+                'payment_proof'  => $proofPath,
+                'paid_at'        => $end,
+            ]);
+            return response()->json(['success' => true, 'message' => 'تم إلغاء الحجز وتسجيل الدفع']);
+        }
+
+        // Pay later — record fee as debt
+        $booking->update([
+            'status'    => 'cancelled',
+            'end_time'  => $end,
+            'total_fee' => $calc['total'],
+        ]);
+        return response()->json([
+            'success' => true,
+            'message' => 'تم الإلغاء. الرسوم المستحقة ' . number_format($calc['total']) . ' ل.س ستُضاف لحجزك القادم.',
+            'data'    => ['pending_fee' => $calc['total']],
+        ]);
+    }
+
+    // ── Pending debt (AJAX for booking modal) ─────────────────────────────────
+
+    public function pendingDebt(): \Illuminate\Http\JsonResponse
+    {
+        $debt = Booking::where('user_id', Auth::id())
+            ->where('status', 'cancelled')
+            ->where('total_fee', '>', 0)
+            ->whereNull('paid_at')
+            ->sum('total_fee');
+
+        return response()->json(['success' => true, 'data' => ['debt' => (float) $debt]]);
     }
 }

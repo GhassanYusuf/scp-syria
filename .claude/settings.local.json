@@ -19,7 +19,8 @@
       "Bash(php -r ':*)",
       "Bash(php -r \"echo file_put_contents\\('C:/xampp/htdocs/scp-syria/storage/app/public/test.txt', 'ok'\\) ? 'write OK' : 'write FAIL';\")",
       "Bash(curl:*)",
-      "Bash(php:*)"
+      "Bash(php:*)",
+      "Bash(grep -v \"^$\")"
     ]
   }
 }

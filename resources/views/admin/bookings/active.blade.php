@@ -338,47 +338,185 @@
 
 </div>
 
-{{-- ── Confirm complete modal ───────────────────────────────────────────────── --}}
-<div class="modal fade" id="confirmCompleteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
-        <div class="modal-content" style="border:none;border-radius:1rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.15);">
-            <div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:1.25rem 1.5rem;">
-                <div class="d-flex align-items-center gap-3">
-                    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        <i class="bi bi-stop-circle-fill" style="font-size:1.3rem;color:#fff;"></i>
+{{-- ── End booking modal (multi-step) ──────────────────────────────────────── --}}
+<div class="modal fade" id="endBookingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:500px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:1rem;overflow:hidden;">
+
+            {{-- Header --}}
+            <div class="modal-header border-0 text-white"
+                 style="background:linear-gradient(135deg,#1e293b,#334155);padding:1.1rem 1.4rem;">
+                <div>
+                    <div class="fw-800" style="font-size:.95rem;">
+                        <i class="bi bi-stop-circle me-2"></i>إنهاء الحجز
                     </div>
-                    <div class="flex-grow-1">
-                        <div class="fw-800" style="color:#fff;font-size:1rem;">إنهاء الحجز</div>
-                        <div class="text-xs mt-1" style="color:rgba(255,255,255,.75);">تأكيد تسجيل خروج السيارة</div>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="modal"></button>
-                </div>
-            </div>
-            <div class="p-4">
-                <div class="p-3 rounded-3 mb-4" style="background:#f8fafc;border:1px solid #f1f5f9;">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-xs fw-600" style="color:#64748b;">رقم اللوحة</span>
-                        <span class="fw-800" id="confirmPlate" style="font-family:monospace;font-size:1rem;color:#0f172a;letter-spacing:.05em;"></span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="text-xs fw-600" style="color:#64748b;">الموقف</span>
-                        <span class="fw-600 text-sm" id="confirmLot" style="color:#475569;"></span>
+                    <div class="text-xs mt-1" style="color:rgba(255,255,255,.6);">
+                        <span id="endBkPlate" style="font-family:monospace;letter-spacing:.05em;"></span>
+                        &nbsp;·&nbsp;
+                        <span id="endBkLot"></span>
                     </div>
                 </div>
-                <p class="text-sm mb-0" style="color:#64748b;text-align:center;">
-                    هل تريد إنهاء هذا الحجز وتسجيل خروج السيارة؟
-                </p>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="px-4 pb-4 d-flex gap-2">
-                <button type="button" class="btn btn-sm fw-600"
-                        style="background:#f1f5f9;color:#475569;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem 1rem;"
+
+            <div class="modal-body p-0">
+
+                {{-- ── STEP 1 : choose action ─────────────────────────────── --}}
+                <div id="endStep1" class="p-4">
+                    <p class="text-sm text-center mb-3 fw-600" style="color:#475569;">اختر طريقة الإنهاء:</p>
+                    <div class="row g-3">
+
+                        <div class="col-6">
+                            <button class="w-100 h-100 border-0 rounded-3 p-3 text-center"
+                                    style="background:#f0fdf4;cursor:pointer;transition:box-shadow .15s;"
+                                    onmouseover="this.style.boxShadow='0 0 0 2px #10b981'"
+                                    onmouseout="this.style.boxShadow=''"
+                                    onclick="endChoose('payment')">
+                                <div style="font-size:2rem;margin-bottom:.5rem;">💳</div>
+                                <div class="fw-800 text-sm" style="color:#065f46;font-family:'Cairo',sans-serif;">إتمام الدفع</div>
+                                <div class="text-xs mt-1" style="color:#6b7280;">احتساب الرسوم وتسجيل الدفع</div>
+                            </button>
+                        </div>
+
+                        <div class="col-6">
+                            <button class="w-100 h-100 border-0 rounded-3 p-3 text-center"
+                                    style="background:#fff7ed;cursor:pointer;transition:box-shadow .15s;"
+                                    onmouseover="this.style.boxShadow='0 0 0 2px #f59e0b'"
+                                    onmouseout="this.style.boxShadow=''"
+                                    onclick="endChoose('force')">
+                                <div style="font-size:2rem;margin-bottom:.5rem;">⚠️</div>
+                                <div class="fw-800 text-sm" style="color:#92400e;font-family:'Cairo',sans-serif;">إغلاق طارئ</div>
+                                <div class="text-xs mt-1" style="color:#6b7280;">السيارة غادرت بدون دفع</div>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+                {{-- ── STEP 2A : receipt + payment ────────────────────────── --}}
+                <div id="endStep2Pay" style="display:none;" class="p-4">
+
+                    <button class="btn btn-sm mb-3 fw-600" onclick="endBack()"
+                            style="background:#f1f5f9;color:#475569;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;">
+                        <i class="bi bi-arrow-right me-1"></i>رجوع
+                    </button>
+
+                    {{-- Times --}}
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="p-2 rounded-3 text-center" style="background:#f0fdf4;">
+                                <div class="text-xs fw-600 mb-1" style="color:#64748b;">وقت الدخول</div>
+                                <div class="fw-700 small" id="payRcptEntry" style="color:#059669;">—</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-2 rounded-3 text-center" style="background:#fef2f2;">
+                                <div class="text-xs fw-600 mb-1" style="color:#64748b;">وقت الخروج</div>
+                                <div class="fw-700 small" id="payRcptExit" style="color:#dc2626;">—</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Fee breakdown --}}
+                    <div class="mb-3">
+                        <div class="fw-bold small mb-2" style="color:#0f172a;font-family:'Cairo',sans-serif;">تفصيل الأجرة</div>
+                        <div id="payRcptBreakdown" style="background:#f8fafc;border-radius:10px;padding:10px 14px;">
+                            <div class="text-center py-2" style="color:#94a3b8;">
+                                <span class="spinner-border spinner-border-sm"></span>
+                            </div>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;padding:.625rem 0;border-top:2px solid #e2e8f0;font-weight:800;font-size:1.05rem;color:#0f172a;margin-top:.25rem;">
+                            <span style="font-family:'Cairo',sans-serif;">الإجمالي</span>
+                            <span id="payRcptTotal" style="color:#27ae60;">—</span>
+                        </div>
+                    </div>
+
+                    {{-- Payment method --}}
+                    <div class="mb-1">
+                        <div class="fw-bold small mb-2" style="color:#0f172a;font-family:'Cairo',sans-serif;">طريقة الدفع</div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label style="cursor:pointer;display:block;">
+                                    <input type="radio" name="adminPayType" value="cash" class="d-none" checked onchange="adminSelectPayment('cash')">
+                                    <div id="adminPayOptCash"
+                                         class="text-center p-3 rounded-3"
+                                         style="border:2px solid #10b981;background:#f0fdf4;">
+                                        <i class="bi bi-cash-coin d-block mb-1" style="font-size:1.4rem;color:#10b981;"></i>
+                                        <span class="text-xs fw-600" style="color:#065f46;">نقداً</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <label style="cursor:pointer;display:block;">
+                                    <input type="radio" name="adminPayType" value="upload" class="d-none" onchange="adminSelectPayment('upload')">
+                                    <div id="adminPayOptUpload"
+                                         class="text-center p-3 rounded-3"
+                                         style="border:2px solid #e2e8f0;background:#fff;">
+                                        <i class="bi bi-cloud-upload d-block mb-1" style="font-size:1.4rem;color:#3b82f6;"></i>
+                                        <span class="text-xs fw-600" style="color:#1e40af;">إيصال إلكتروني</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="adminUploadArea" class="mt-2 p-3 border rounded-3 bg-light" style="display:none;">
+                            <input type="file" id="adminPaymentProof" class="form-control form-control-sm" accept="image/*,.pdf">
+                            <div class="text-xs mt-1 text-muted">JPG / PNG / PDF — حد أقصى 4MB</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                {{-- ── STEP 2B : force close ───────────────────────────────── --}}
+                <div id="endStep2Force" style="display:none;" class="p-4">
+
+                    <button class="btn btn-sm mb-3 fw-600" onclick="endBack()"
+                            style="background:#f1f5f9;color:#475569;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;">
+                        <i class="bi bi-arrow-right me-1"></i>رجوع
+                    </button>
+
+                    <div class="text-center py-2 mb-3">
+                        <div style="font-size:2.8rem;margin-bottom:.75rem;">⚠️</div>
+                        <p class="fw-700 mb-1" style="color:#0f172a;font-family:'Cairo',sans-serif;">إغلاق طارئ بدون دفع</p>
+                        <p class="text-sm mb-0" style="color:#64748b;">سيتم إنهاء الحجز فوراً دون تسجيل أي رسوم.<br>استخدم هذا الخيار فقط إذا غادرت السيارة بدون دفع.</p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-sm fw-600 mb-1" style="color:#475569;font-family:'Cairo',sans-serif;">
+                            سبب الإغلاق <span style="color:#94a3b8;font-weight:400;">(اختياري)</span>
+                        </label>
+                        <textarea id="endForceNotes" rows="2"
+                                  class="form-control"
+                                  style="border-color:#e2e8f0;border-radius:.625rem;font-family:'Cairo',sans-serif;resize:none;"
+                                  placeholder="مثال: السيارة غادرت دون إذن، خلل في النظام..."></textarea>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light fw-600 px-4"
+                                style="font-family:'Cairo',sans-serif;border-radius:.5rem;"
+                                data-bs-dismiss="modal">إلغاء</button>
+                        <button type="button" id="endConfirmForceBtn"
+                                class="btn btn-warning fw-bold flex-grow-1 text-dark"
+                                style="font-family:'Cairo',sans-serif;border-radius:.5rem;">
+                            <i class="bi bi-x-circle me-1"></i>تأكيد الإغلاق الطارئ
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+
+            {{-- Payment step footer (inside modal-content, outside modal-body) --}}
+            <div id="endPayFooter" class="modal-footer border-0 px-4 pb-4 pt-2 gap-2" style="display:none;">
+                <button type="button" class="btn btn-light fw-600 px-4"
+                        style="font-family:'Cairo',sans-serif;border-radius:.5rem;"
                         data-bs-dismiss="modal">إلغاء</button>
-                <button type="button" id="confirmCompleteBtn"
-                        class="btn btn-sm fw-700 flex-grow-1"
-                        style="background:#ef4444;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem;">
-                    <i class="bi bi-stop-circle me-1"></i>تأكيد الإنهاء
+                <button type="button" id="endConfirmPayBtn"
+                        class="btn btn-success fw-bold flex-grow-1"
+                        style="font-family:'Cairo',sans-serif;border-radius:.5rem;">
+                    <i class="bi bi-check2-circle me-1"></i>تأكيد الدفع والخروج
                 </button>
             </div>
+
         </div>
     </div>
 </div>
@@ -414,59 +552,182 @@ function showToast(msg, type = 'success') {
     setTimeout(() => { el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3500);
 }
 
-// ── Confirm complete modal ────────────────────────────────────────────────────
-let pendingId = null;
-let confirmModal = null;
+// ── End booking modal ─────────────────────────────────────────────────────────
+const csrf = document.querySelector('meta[name="csrf-token"]').content;
+let endBookingId   = null;
+let endChoiceType  = null;
+let adminPayMethod = 'cash';
+let endModal       = null;
 
-function getConfirmModal() {
-    if (!confirmModal) confirmModal = new bootstrap.Modal(document.getElementById('confirmCompleteModal'));
-    return confirmModal;
+function getEndModal() {
+    if (!endModal) endModal = new bootstrap.Modal(document.getElementById('endBookingModal'));
+    return endModal;
 }
 
 function askComplete(id, plate, lot) {
-    pendingId = id;
-    document.getElementById('confirmPlate').textContent = plate;
-    document.getElementById('confirmLot').textContent   = lot;
-    getConfirmModal().show();
+    endBookingId  = id;
+    endChoiceType = null;
+    adminPayMethod = 'cash';
+    document.getElementById('endBkPlate').textContent = plate;
+    document.getElementById('endBkLot').textContent   = lot;
+    showEndStep('step1');
+    getEndModal().show();
 }
 
-document.getElementById('confirmCompleteBtn').addEventListener('click', async () => {
-    if (!pendingId) return;
-    const btn = document.getElementById('confirmCompleteBtn');
+function showEndStep(step) {
+    document.getElementById('endStep1').style.display       = step === 'step1'     ? '' : 'none';
+    document.getElementById('endStep2Pay').style.display    = step === 'step2Pay'  ? '' : 'none';
+    document.getElementById('endStep2Force').style.display  = step === 'step2Force'? '' : 'none';
+    document.getElementById('endPayFooter').style.display   = step === 'step2Pay'  ? 'flex' : 'none';
+}
+
+function endBack() { showEndStep('step1'); }
+
+async function endChoose(type) {
+    endChoiceType = type;
+
+    if (type === 'payment') {
+        showEndStep('step2Pay');
+        document.querySelector('input[name="adminPayType"][value="cash"]').checked = true;
+        adminSelectPayment('cash');
+
+        // Reset pay button state
+        const payBtn = document.getElementById('endConfirmPayBtn');
+        payBtn.disabled = false;
+        payBtn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>تأكيد الدفع والخروج';
+
+        document.getElementById('payRcptBreakdown').innerHTML =
+            '<div class="text-center py-2" style="color:#94a3b8;"><span class="spinner-border spinner-border-sm"></span></div>';
+        document.getElementById('payRcptEntry').textContent = '—';
+        document.getElementById('payRcptExit').textContent  = '—';
+        document.getElementById('payRcptTotal').textContent = '—';
+
+        try {
+            const res  = await fetch(`/admin/bookings/${endBookingId}/checkout-preview`);
+            const data = await res.json();
+            if (!data.success) { showToast(data.message || 'حدث خطأ', 'error'); endBack(); return; }
+            const d = data.data;
+            document.getElementById('payRcptEntry').textContent = d.entry_time;
+            document.getElementById('payRcptExit').textContent  = d.exit_time;
+            document.getElementById('payRcptTotal').textContent = Number(d.total_fee).toLocaleString('ar-SA') + ' ل.س';
+            const rows = d.fee_details.map(r => `
+                <div style="display:flex;justify-content:space-between;padding:.3rem 0;border-bottom:1px dashed #f1f5f9;font-size:.82rem;">
+                    <span>${r.day} <small style="color:#94a3b8;">${r.date}</small></span>
+                    <span style="color:#64748b;">${r.hours}س × ${Number(r.rate).toLocaleString('ar-SA')}</span>
+                    <span class="fw-600" style="color:#0f172a;">${Number(r.subtotal).toLocaleString('ar-SA')} ل.س</span>
+                </div>`).join('');
+            document.getElementById('payRcptBreakdown').innerHTML =
+                rows || '<p class="text-xs text-center" style="color:#94a3b8;">لا تفاصيل</p>';
+        } catch {
+            showToast('تعذّر تحميل بيانات الفاتورة', 'error');
+            endBack();
+        }
+
+    } else {
+        showEndStep('step2Force');
+        document.getElementById('endForceNotes').value = '';
+    }
+}
+
+function adminSelectPayment(method) {
+    adminPayMethod = method;
+    const cashOpt    = document.getElementById('adminPayOptCash');
+    const uploadOpt  = document.getElementById('adminPayOptUpload');
+    const uploadArea = document.getElementById('adminUploadArea');
+    if (method === 'cash') {
+        cashOpt.style.cssText   = 'border:2px solid #10b981;background:#f0fdf4;border-radius:.75rem;text-align:center;padding:.75rem;';
+        uploadOpt.style.cssText = 'border:2px solid #e2e8f0;background:#fff;border-radius:.75rem;text-align:center;padding:.75rem;';
+        uploadArea.style.display = 'none';
+    } else {
+        cashOpt.style.cssText   = 'border:2px solid #e2e8f0;background:#fff;border-radius:.75rem;text-align:center;padding:.75rem;';
+        uploadOpt.style.cssText = 'border:2px solid #3b82f6;background:#eff6ff;border-radius:.75rem;text-align:center;padding:.75rem;';
+        uploadArea.style.display = 'block';
+    }
+}
+
+// Payment confirm
+document.getElementById('endConfirmPayBtn').addEventListener('click', async () => {
+    if (!endBookingId) return;
+    const btn = document.getElementById('endConfirmPayBtn');
+
+    if (adminPayMethod === 'upload' && !document.getElementById('adminPaymentProof').files.length) {
+        showToast('يرجى رفع إيصال الدفع', 'error');
+        return;
+    }
+
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الإنهاء...';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري المعالجة...';
+
+    const fd = new FormData();
+    fd.append('type', 'payment');
+    fd.append('payment_method', adminPayMethod);
+    if (adminPayMethod === 'upload') {
+        fd.append('payment_proof', document.getElementById('adminPaymentProof').files[0]);
+    }
 
     try {
-        const res  = await fetch(`/admin/bookings/${pendingId}/complete`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Content-Type': 'application/json',
-            }
+        const res  = await fetch(`/admin/bookings/${endBookingId}/complete`, {
+            method: 'POST', headers: { 'X-CSRF-TOKEN': csrf }, body: fd
         });
         const data = await res.json();
-        getConfirmModal().hide();
         if (data.success) {
-            const row = document.getElementById('row-' + pendingId);
-            if (row) {
-                row.style.transition = 'opacity .4s, transform .4s';
-                row.style.opacity    = '0';
-                row.style.transform  = 'translateX(20px)';
-                setTimeout(() => row.remove(), 420);
-            }
-            showToast('تم إنهاء الحجز بنجاح.');
+            getEndModal().hide();
+            removeRow(endBookingId);
+            showToast('تم تسجيل الدفع والخروج بنجاح');
         } else {
-            showToast(data.message || 'حدث خطأ أثناء الإنهاء.', 'error');
+            showToast(data.message || 'حدث خطأ', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>تأكيد الدفع والخروج';
         }
     } catch {
-        getConfirmModal().hide();
-        showToast('تعذّر الاتصال بالخادم. حاول مجدداً.', 'error');
-    } finally {
+        showToast('تعذّر الاتصال بالخادم', 'error');
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-stop-circle me-1"></i>تأكيد الإنهاء';
-        pendingId = null;
+        btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>تأكيد الدفع والخروج';
     }
 });
+
+// Force-close confirm
+document.getElementById('endConfirmForceBtn').addEventListener('click', async () => {
+    if (!endBookingId) return;
+    const btn = document.getElementById('endConfirmForceBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الإغلاق...';
+
+    const fd = new FormData();
+    fd.append('type', 'force');
+    const notes = document.getElementById('endForceNotes').value.trim();
+    if (notes) fd.append('notes', notes);
+
+    try {
+        const res  = await fetch(`/admin/bookings/${endBookingId}/complete`, {
+            method: 'POST', headers: { 'X-CSRF-TOKEN': csrf }, body: fd
+        });
+        const data = await res.json();
+        if (data.success) {
+            getEndModal().hide();
+            removeRow(endBookingId);
+            showToast('تم الإغلاق الطارئ للحجز');
+        } else {
+            showToast(data.message || 'حدث خطأ', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>تأكيد الإغلاق الطارئ';
+        }
+    } catch {
+        showToast('تعذّر الاتصال بالخادم', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-x-circle me-1"></i>تأكيد الإغلاق الطارئ';
+    }
+});
+
+function removeRow(id) {
+    const row = document.getElementById('row-' + id);
+    if (row) {
+        row.style.transition = 'opacity .4s, transform .4s';
+        row.style.opacity    = '0';
+        row.style.transform  = 'translateX(20px)';
+        setTimeout(() => row.remove(), 420);
+    }
+}
 
 // ── Auto-refresh (pauses while modal is open) ─────────────────────────────────
 let t = 30;

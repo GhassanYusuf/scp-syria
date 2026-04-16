@@ -191,6 +191,28 @@ class OperatorController extends Controller
         ]);
     }
 
+    // ── Cancel a pre-reservation (operator verifies name or phone) ──────────────
+
+    public function cancelReservation(Request $request, Booking $booking): JsonResponse
+    {
+        if ($booking->source !== 'reservation' || $booking->status !== 'active') {
+            return response()->json(['success' => false, 'message' => 'هذا الحجز لا يمكن إلغاؤه'], 400);
+        }
+
+        $input = trim($request->input('verification', ''));
+
+        $nameMatch  = $booking->customer_name && mb_strtolower($input) === mb_strtolower($booking->customer_name);
+        $phoneMatch = $booking->phone         && $input === $booking->phone;
+
+        if (!$nameMatch && !$phoneMatch) {
+            return response()->json(['success' => false, 'message' => 'الاسم أو رقم الهاتف غير مطابق'], 422);
+        }
+
+        $booking->update(['status' => 'cancelled']);
+
+        return response()->json(['success' => true, 'message' => 'تم إلغاء الحجز بنجاح']);
+    }
+
     // ── Legacy checkout (kept for backward compatibility) ───────────────────────
 
     public function checkOut(Request $request, Booking $booking): JsonResponse

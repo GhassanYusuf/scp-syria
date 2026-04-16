@@ -17,6 +17,9 @@ Route::middleware('auth')->group(function () {
 
     // Booking from the public landing page (web session auth)
     Route::post('/reserve', [ProfileController::class, 'reserve'])->name('reserve');
+    Route::get('/reservations/{booking}/cancel-preview', [ProfileController::class, 'cancelPreview'])->name('reservations.cancel-preview');
+    Route::post('/reservations/{booking}/cancel', [ProfileController::class, 'cancelBooking'])->name('reservations.cancel');
+    Route::get('/user/pending-debt', [ProfileController::class, 'pendingDebt'])->name('user.pending-debt');
 });
 
 // Admin Dashboard routes (protected - uncomment auth middleware for production)
@@ -37,6 +40,7 @@ Route::prefix('admin')->middleware('admin')->name('admin.')->group(function () {
 
     // Active Bookings
     Route::get('/bookings/active', [\App\Http\Controllers\Admin\BookingController::class, 'activeIndex'])->name('bookings.active');
+    Route::get('/bookings/{booking}/checkout-preview', [\App\Http\Controllers\Admin\BookingController::class, 'checkoutPreview'])->name('bookings.checkout-preview');
     Route::post('/bookings/{booking}/complete', [\App\Http\Controllers\Admin\BookingController::class, 'completeBooking'])->name('bookings.complete');
 });
 // });
@@ -49,6 +53,7 @@ Route::prefix('operator')->middleware('operator')->name('operator.')->group(func
     Route::get('/{booking}/checkout-preview', [\App\Http\Controllers\Operator\OperatorController::class, 'checkoutPreview'])->name('checkoutPreview');
     Route::post('/{booking}/payment',         [\App\Http\Controllers\Operator\OperatorController::class, 'processPayment'])->name('payment');
     Route::post('/{booking}/checkout',        [\App\Http\Controllers\Operator\OperatorController::class, 'checkOut'])->name('checkOut');
+    Route::post('/{booking}/cancel',          [\App\Http\Controllers\Operator\OperatorController::class, 'cancelReservation'])->name('cancel');
 });
 
 // });

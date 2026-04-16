@@ -290,8 +290,23 @@
                                 </div>
                                 <div style="border-top:1px dashed #bbf7d0;margin:.5rem 0;"></div>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-700" style="color:#065f46;font-size:.85rem;">المبلغ الإجمالي</span>
+                                    <span class="fw-700" style="color:#065f46;font-size:.85rem;">رسوم الحجز</span>
                                     <span class="fw-800" id="bkTotal" style="color:#059669;font-size:1.15rem;">--</span>
+                                </div>
+                                {{-- Pending debt row (hidden when 0) --}}
+                                <div id="bkDebtRow" style="display:none;">
+                                    <div style="border-top:1px dashed #fbbf24;margin:.5rem 0;"></div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-600 text-xs" style="color:#92400e;">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>رصيد مستحق سابق
+                                        </span>
+                                        <span class="fw-700 text-xs" id="bkDebtAmt" style="color:#ef4444;">--</span>
+                                    </div>
+                                    <div style="border-top:1.5px solid #e2e8f0;margin:.5rem 0;"></div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-700" style="color:#0f172a;font-size:.85rem;">الإجمالي مع المستحق</span>
+                                        <span class="fw-800" id="bkGrandTotal" style="color:#ef4444;font-size:1.15rem;">--</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -530,6 +545,8 @@
             return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
         }
 
+        let userPendingDebt = 0;
+
         function calcTotal() {
             const start = document.getElementById('bkStart').value;
             const end   = document.getElementById('bkEnd').value;
@@ -541,6 +558,16 @@
             document.getElementById('bkDuration').textContent  = hours + (hours === 1 ? ' ساعة' : ' ساعات');
             document.getElementById('bkHourlyRate').textContent = fmtPrice(current.price);
             document.getElementById('bkTotal').textContent      = fmtPrice(total);
+
+            // Show debt row if user has pending fees
+            const debtRow = document.getElementById('bkDebtRow');
+            if (userPendingDebt > 0) {
+                document.getElementById('bkDebtAmt').textContent      = fmtPrice(userPendingDebt);
+                document.getElementById('bkGrandTotal').textContent   = fmtPrice(total + userPendingDebt);
+                debtRow.style.display = '';
+            } else {
+                debtRow.style.display = 'none';
+            }
         }
 
         function resetPrice() {
@@ -552,7 +579,7 @@
         document.getElementById('bkStart').addEventListener('change', calcTotal);
         document.getElementById('bkEnd').addEventListener('change', calcTotal);
 
-        function openBookingModal(lot) {
+        async function openBookingModal(lot) {
             document.getElementById('bookingLotName').textContent = lot.name;
             document.getElementById('bookingLotMeta').textContent = lot.address + ' · ' + fmtPrice(lot.price) + ' / ساعة';
             document.getElementById('bookingUserInfo').textContent =
@@ -568,6 +595,16 @@
 
             document.getElementById('bookingAlert').className = 'd-none mb-3';
             document.getElementById('bookingAlert').innerHTML = '';
+            document.getElementById('bkDebtRow').style.display = 'none';
+
+            // Fetch pending debt (if logged in)
+            userPendingDebt = 0;
+            try {
+                const dr = await fetch('/user/pending-debt');
+                const dd = await dr.json();
+                if (dd.success) userPendingDebt = dd.data.debt || 0;
+            } catch {}
+            calcTotal();
 
             getBookingModal().show();
         }
