@@ -60,6 +60,12 @@
 
             <div class="sidebar-section">التشغيل</div>
 
+            <a href="{{ route('admin.operators.index') }}"
+               class="sidebar-link {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}">
+                <i class="bi bi-people sidebar-icon"></i>
+                <span>المشغّلون</span>
+            </a>
+
             <a href="{{ route('operator.dashboard') }}"
                class="sidebar-link {{ request()->routeIs('operator.*') ? 'active' : '' }}">
                 <i class="bi bi-person-badge sidebar-icon"></i>
@@ -179,6 +185,11 @@
        class="mob-nav-item {{ request()->routeIs('admin.bookings.*') ? 'active' : '' }}">
         <i class="bi bi-calendar-check"></i>
         <span>الحجوزات</span>
+    </a>
+    <a href="{{ route('admin.operators.index') }}"
+       class="mob-nav-item {{ request()->routeIs('admin.operators.*') ? 'active' : '' }}">
+        <i class="bi bi-people"></i>
+        <span>المشغّلون</span>
     </a>
     <a href="{{ route('operator.dashboard') }}"
        class="mob-nav-item {{ request()->routeIs('operator.*') ? 'active' : '' }}">

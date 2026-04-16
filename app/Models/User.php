@@ -24,6 +24,7 @@ class User extends Authenticatable
         'phone',
         'password',
         'role',
+        'parking_lot_id',
     ];
 
     protected $casts = [
@@ -53,5 +54,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function assignedLot(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(ParkingLot::class, 'parking_lot_id');
     }
 }

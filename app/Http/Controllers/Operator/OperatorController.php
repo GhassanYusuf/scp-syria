@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\ParkingLot;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
@@ -16,23 +17,39 @@ class OperatorController extends Controller
 
     public function dashboard(Request $request): \Illuminate\View\View
     {
+        $user           = Auth::user();
+        $assignedLotId  = $user->parking_lot_id; // null = no restriction (e.g. admin)
+
         $rawLots = ParkingLot::active()->withStatus()->get();
 
         $parkingLots = $rawLots->map(fn($lot) => [
-            'id'      => $lot->id,
-            'name'    => $lot->name,
-            'address' => $lot->address,
-            'total'   => $lot->total_capacity,
-            'avail'   => max(0, $lot->total_capacity - ($lot->active_bookings_count + $lot->active_registries_count)),
-            'occupied'=> $lot->active_bookings_count + $lot->active_registries_count,
-            'price'   => (float) $lot->price_per_hour,
-            'hours'   => $lot->working_hours,
-            'lat'     => (float) $lot->latitude,
-            'lng'     => (float) $lot->longitude,
-            'image'   => $lot->image ? Storage::url($lot->image) : null,
+            'id'       => $lot->id,
+            'name'     => $lot->name,
+            'address'  => $lot->address,
+            'total'    => $lot->total_capacity,
+            'avail'    => max(0, $lot->total_capacity - ($lot->active_bookings_count + $lot->active_registries_count)),
+            'occupied' => $lot->active_bookings_count + $lot->active_registries_count,
+            'price'    => (float) $lot->price_per_hour,
+            'hours'    => $lot->working_hours,
+            'lat'      => (float) $lot->latitude,
+            'lng'      => (float) $lot->longitude,
+            'image'    => $lot->image ? Storage::url($lot->image) : null,
+            'locked'   => $assignedLotId !== null && $lot->id !== $assignedLotId,
         ])->values();
 
-        $selectedLotId  = $request->get('lot_id');
+        // If operator has an assigned lot, force that lot
+        $selectedLotId = $request->get('lot_id');
+        if ($assignedLotId !== null) {
+            // Reject any attempt to view a different lot
+            if ($selectedLotId && (int) $selectedLotId !== $assignedLotId) {
+                return redirect()->route('operator.dashboard', ['lot_id' => $assignedLotId]);
+            }
+            // Auto-select assigned lot if nothing selected
+            if (!$selectedLotId) {
+                $selectedLotId = $assignedLotId;
+            }
+        }
+
         $selectedLot    = null;
         $activeCars     = collect();
         $reservations   = collect();
@@ -56,7 +73,7 @@ class OperatorController extends Controller
         }
 
         return view('operator.dashboard', compact(
-            'parkingLots', 'selectedLot', 'activeCars', 'reservations', 'selectedLotId'
+            'parkingLots', 'selectedLot', 'activeCars', 'reservations', 'selectedLotId', 'assignedLotId'
         ));
     }
 

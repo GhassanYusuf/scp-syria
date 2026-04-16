@@ -38,6 +38,12 @@ Route::prefix('admin')->middleware('admin')->name('admin.')->group(function () {
     Route::post('/parking-lots/{parkingLot}/toggle', [\App\Http\Controllers\Admin\ParkingLotController::class, 'toggleStatus'])->name('parking-lots.toggle');
     Route::delete('/parking-lots/{parkingLot}', [\App\Http\Controllers\Admin\ParkingLotController::class, 'destroy'])->name('parking-lots.destroy');
 
+    // Operators management
+    Route::get('/operators', [\App\Http\Controllers\Admin\AdminOperatorController::class, 'index'])->name('operators.index');
+    Route::post('/operators', [\App\Http\Controllers\Admin\AdminOperatorController::class, 'store'])->name('operators.store');
+    Route::put('/operators/{operator}', [\App\Http\Controllers\Admin\AdminOperatorController::class, 'update'])->name('operators.update');
+    Route::delete('/operators/{operator}', [\App\Http\Controllers\Admin\AdminOperatorController::class, 'destroy'])->name('operators.destroy');
+
     // Active Bookings
     Route::get('/bookings/active', [\App\Http\Controllers\Admin\BookingController::class, 'activeIndex'])->name('bookings.active');
     Route::get('/bookings/{booking}/checkout-preview', [\App\Http\Controllers\Admin\BookingController::class, 'checkoutPreview'])->name('bookings.checkout-preview');

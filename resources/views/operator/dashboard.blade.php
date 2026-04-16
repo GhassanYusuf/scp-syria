@@ -20,6 +20,13 @@
         transform:translateY(-8px);
         box-shadow:0 18px 40px rgba(0,0,0,.13);
     }
+    .lot-portrait-card.lot-locked {
+        cursor:not-allowed;
+    }
+    .lot-portrait-card.lot-locked:hover {
+        transform:none;
+        box-shadow:0 6px 20px rgba(0,0,0,.07);
+    }
 
     /* Image area */
     .lot-card-img-wrap {
@@ -185,6 +192,7 @@ $gradients = [
         $pct      = $lot['total'] > 0 ? round($lot['occupied'] / $lot['total'] * 100) : 0;
         $avail    = $lot['avail'];
         $gradient = $gradients[$lot['id'] % 6];
+        $locked   = $lot['locked'] ?? false;
         if ($avail === 0)                     { $badgeColor='rgba(239,68,68,.82)';   $badgeTxt='ممتلئ';          $barCol='#ef4444'; }
         elseif ($avail < $lot['total'] * 0.2) { $badgeColor='rgba(245,158,11,.82)'; $badgeTxt=$avail.' مكان';   $barCol='#f59e0b'; }
         else                                  { $badgeColor='rgba(16,185,129,.82)';  $badgeTxt=$avail.' متاح';   $barCol='#10b981'; }
@@ -193,25 +201,34 @@ $gradients = [
          data-name="{{ mb_strtolower($lot['name']) }}"
          data-address="{{ mb_strtolower($lot['address']) }}">
 
-        <div class="lot-portrait-card" onclick="selectLot({{ $lot['id'] }})">
+        <div class="lot-portrait-card {{ $locked ? 'lot-locked' : '' }}"
+             @if(!$locked) onclick="selectLot({{ $lot['id'] }})" @endif>
 
             {{-- Image or gradient placeholder --}}
             <div class="lot-card-img-wrap">
                 @if($lot['image'])
-                    <img src="{{ $lot['image'] }}" alt="{{ $lot['name'] }}">
+                    <img src="{{ $lot['image'] }}" alt="{{ $lot['name'] }}"
+                         style="{{ $locked ? 'filter:grayscale(1);opacity:.55;' : '' }}">
                 @else
-                    <div class="lot-card-placeholder" style="background:{{ $gradient }};">
+                    <div class="lot-card-placeholder" style="background:{{ $gradient }};{{ $locked ? 'filter:grayscale(1);opacity:.55;' : '' }}">
                         <i class="bi bi-buildings"></i>
                         <span>{{ $lot['name'] }}</span>
                     </div>
                 @endif
-                <span class="lot-card-avail-badge" style="background:{{ $badgeColor }};">
-                    {{ $badgeTxt }}
-                </span>
+                @if($locked)
+                    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(15,23,42,.45);gap:.4rem;">
+                        <i class="bi bi-lock-fill" style="font-size:2rem;color:#fff;opacity:.9;"></i>
+                        <span style="color:#fff;font-size:.75rem;font-weight:700;">غير مخصص لك</span>
+                    </div>
+                @else
+                    <span class="lot-card-avail-badge" style="background:{{ $badgeColor }};">
+                        {{ $badgeTxt }}
+                    </span>
+                @endif
             </div>
 
             {{-- Card body --}}
-            <div class="lot-card-body">
+            <div class="lot-card-body" style="{{ $locked ? 'opacity:.5;' : '' }}">
                 <div class="lot-card-title">{{ $lot['name'] }}</div>
                 <div class="lot-card-address">
                     <i class="bi bi-geo-alt flex-shrink-0"></i>
@@ -228,11 +245,13 @@ $gradients = [
                     <span><i class="bi bi-clock"></i>{{ $lot['hours'] }}</span>
                 </div>
 
+                @if(!$locked)
                 <div class="lot-card-select-wrap">
                     <button class="lot-card-select-btn" onclick="event.stopPropagation();selectLot({{ $lot['id'] }})">
                         <i class="bi bi-check2-circle me-1"></i>اختر هذا الموقف
                     </button>
                 </div>
+                @endif
             </div>
 
         </div>
@@ -271,11 +290,13 @@ $gradients = [
     <div class="d-flex align-items-center gap-3">
         <span class="badge badge-soft-success">{{ $selectedLot->available_spaces }} متاح</span>
         <span class="badge badge-soft-warning">{{ $selectedLot->occupied_spaces }} مشغول</span>
+        @if(!$assignedLotId)
         <a href="{{ route('operator.dashboard') }}"
            class="btn btn-sm fw-600"
            style="background:#f1f5f9;color:#475569;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;">
             <i class="bi bi-arrow-repeat me-1"></i>تغيير الموقف
         </a>
+        @endif
         <span class="badge badge-soft-secondary text-xs" id="refresh-badge"></span>
     </div>
 </div>
