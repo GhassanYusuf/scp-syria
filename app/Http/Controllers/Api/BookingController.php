@@ -18,6 +18,9 @@ class BookingController extends Controller
     {
         $validated = $request->validated();
 
+        $lot = \App\Models\ParkingLot::find($validated['parking_lot_id']);
+        $validated['pricing_snapshot'] = $lot?->pricingSnapshot();
+
         $booking = \App\Models\Booking::create($validated);
 
         // Note: In production, create CarRegistry here for the booking car

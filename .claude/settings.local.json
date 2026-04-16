@@ -15,7 +15,11 @@
       "Bash(git reset:*)",
       "Bash(php -l app/Http/Controllers/Admin/ParkingLotController.php)",
       "Bash(php -l app/Http/Requests/StoreParkingLotRequest.php)",
-      "Bash(php -l app/Http/Controllers/Admin/BookingController.php)"
+      "Bash(php -l app/Http/Controllers/Admin/BookingController.php)",
+      "Bash(php -r ':*)",
+      "Bash(php -r \"echo file_put_contents\\('C:/xampp/htdocs/scp-syria/storage/app/public/test.txt', 'ok'\\) ? 'write OK' : 'write FAIL';\")",
+      "Bash(curl:*)",
+      "Bash(php:*)"
     ]
   }
 }

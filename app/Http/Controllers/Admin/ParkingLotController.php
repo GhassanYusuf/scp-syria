@@ -52,6 +52,10 @@ class ParkingLotController extends Controller
     {
         $data = $request->validated();
 
+        // Never let validated() overwrite the stored image path with null.
+        // Only update the image column when a new file is actually uploaded.
+        unset($data['image']);
+
         if ($request->hasFile('image')) {
             if ($parkingLot->image) {
                 Storage::disk('public')->delete($parkingLot->image);
@@ -88,6 +92,38 @@ class ParkingLotController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'تم حذف الموقف بنجاح',
+        ]);
+    }
+
+    public function updatePricing(Request $request, ParkingLot $parkingLot): JsonResponse
+    {
+        $data = $request->validate([
+            'price_per_hour' => 'required|numeric|min:0|max:100000',
+            'pricing_rules'  => 'nullable|array',
+            'pricing_rules.*'=> 'nullable|numeric|min:0|max:100000',
+        ]);
+
+        // Build clean rules array: only include days that differ from base price.
+        // Keys 1-7 (Mon-Sun). Null or empty string means "use base price".
+        $rules = [];
+        foreach ($data['pricing_rules'] ?? [] as $day => $rate) {
+            if ($rate !== null && $rate !== '' && (float) $rate !== (float) $data['price_per_hour']) {
+                $rules[(int) $day] = (float) $rate;
+            }
+        }
+
+        $parkingLot->update([
+            'price_per_hour' => $data['price_per_hour'],
+            'pricing_rules'  => empty($rules) ? null : $rules,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم حفظ أسعار الموقف بنجاح',
+            'data'    => [
+                'price_per_hour' => (float) $parkingLot->price_per_hour,
+                'pricing_rules'  => $parkingLot->pricing_rules,
+            ],
         ]);
     }
 

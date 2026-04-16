@@ -82,14 +82,32 @@ class ParkingLot extends Model
     }
 
     /**
+     * Build the pricing snapshot array to store on a booking at creation time.
+     * Format: ['base' => float, 'rules' => [1 => float, ..., 7 => float]]
+     */
+    public function pricingSnapshot(): array
+    {
+        return [
+            'base'  => (float) $this->price_per_hour,
+            'rules' => $this->pricing_rules ?? [],
+        ];
+    }
+
+    /**
      * Calculate fee and per-day breakdown between two timestamps.
-     * Uses pricing_rules (ISO weekday keys 1–7) if set, otherwise price_per_hour.
+     *
+     * Pass a $snapshot (from booking->pricing_snapshot) to use the rates that were
+     * in effect when the booking was created, guaranteeing price changes never
+     * retroactively affect historical or in-progress bookings.
      *
      * Returns ['total' => float, 'details' => [['day','date','hours','rate','subtotal'], ...]]
      */
-    public function calculateFee(Carbon $start, Carbon $end): array
+    public function calculateFee(Carbon $start, Carbon $end, ?array $snapshot = null): array
     {
-        $rules   = $this->pricing_rules ?? [];
+        $base    = $snapshot ? (float) ($snapshot['base'] ?? $this->price_per_hour)
+                             : (float) $this->price_per_hour;
+        $rules   = $snapshot ? ($snapshot['rules'] ?? [])
+                             : ($this->pricing_rules ?? []);
         $details = [];
         $total   = 0.0;
         $cursor  = $start->copy()->seconds(0);
@@ -99,7 +117,7 @@ class ParkingLot extends Model
             $segEnd = ($dayEnd < $end) ? $dayEnd : $end;
 
             $dow      = (int) $cursor->format('N'); // 1=Mon … 7=Sun
-            $rate     = isset($rules[$dow]) ? (float) $rules[$dow] : (float) $this->price_per_hour;
+            $rate     = isset($rules[$dow]) ? (float) $rules[$dow] : $base;
             $hours    = round($cursor->diffInMinutes($segEnd) / 60, 4);
             $subtotal = $hours * $rate;
 

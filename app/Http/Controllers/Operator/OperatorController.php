@@ -80,14 +80,15 @@ class OperatorController extends Controller
         }
 
         $booking = Booking::create([
-            'parking_lot_id' => $lot->id,
-            'vehicle_plate'  => $data['vehicle_plate'],
-            'customer_name'  => $data['customer_name'] ?? null,
-            'phone'          => $data['phone'] ?? null,
-            'source'         => 'walk_in',
-            'start_time'     => now(),
-            'end_time'       => now()->addHours($data['duration_hours']),
-            'status'         => 'active',
+            'parking_lot_id'   => $lot->id,
+            'vehicle_plate'    => $data['vehicle_plate'],
+            'customer_name'    => $data['customer_name'] ?? null,
+            'phone'            => $data['phone'] ?? null,
+            'source'           => 'walk_in',
+            'start_time'       => now(),
+            'end_time'         => now()->addHours($data['duration_hours']),
+            'status'           => 'active',
+            'pricing_snapshot' => $lot->pricingSnapshot(),
         ]);
 
         return response()->json([
@@ -128,7 +129,7 @@ class OperatorController extends Controller
         $start    = $booking->start_time;
         $end      = now();
         $duration = $start->diffInMinutes($end);
-        $calc     = $lot->calculateFee($start, $end);
+        $calc     = $lot->calculateFee($start, $end, $booking->pricing_snapshot);
 
         return response()->json([
             'success' => true,
@@ -163,7 +164,7 @@ class OperatorController extends Controller
         $lot   = $booking->parkingLot;
         $start = $booking->start_time;
         $end   = now();
-        $calc  = $lot->calculateFee($start, $end);
+        $calc  = $lot->calculateFee($start, $end, $booking->pricing_snapshot);
 
         $proofPath = null;
         if ($request->hasFile('payment_proof')) {

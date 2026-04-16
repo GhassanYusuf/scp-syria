@@ -25,13 +25,15 @@ class Booking extends Model
         'payment_method',
         'payment_proof',
         'paid_at',
+        'pricing_snapshot',
     ];
 
     protected $casts = [
         'start_time'  => 'datetime',
         'end_time'    => 'datetime',
         'paid_at'     => 'datetime',
-        'total_fee'   => 'decimal:2',
+        'total_fee'        => 'decimal:2',
+        'pricing_snapshot' => 'array',
     ];
 
     public function parkingLot(): BelongsTo
