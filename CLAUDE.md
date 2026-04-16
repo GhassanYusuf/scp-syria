@@ -2,6 +2,42 @@
 
 ## Working Rules
 
+### Modal Close Button Must Be on the Far Left in RTL
+
+Bootstrap compiles `.modal-header .btn-close` with physical `margin-left: auto`, which in RTL pushes the × button to the right (next to the title text) instead of to the far left end of the header.
+
+**The fix is already applied globally** in the `[dir="rtl"]` block at the bottom of `app.scss`:
+```scss
+[dir="rtl"] .modal-header .btn-close {
+    margin-left: 0;
+    margin-right: auto;
+}
+```
+
+**Rule: never add inline styles or per-modal hacks to reposition the close button — the global fix handles it. Do not remove this override.**
+
+---
+
+### Never Open Links in a New Tab
+
+**Hard rule. Links must never use `target="_blank"` unless the user explicitly requests it.**
+
+- Remove `target="_blank"` and `rel="noopener"` from all `<a>` tags unless told otherwise.
+- This applies to every view, every layout, every page — no exceptions.
+
+---
+
+### Never Use JavaScript alert() / confirm() / prompt()
+
+**Hard rule. These native browser dialogs are ugly and break the UI.**
+
+- Never use `alert(...)`, `confirm(...)`, or `prompt(...)` anywhere in JavaScript.
+- For confirmations: build a Bootstrap modal with Cancel / Confirm buttons.
+- For success/error feedback: use a toast notification or an inline alert element.
+- This applies to every view, every page, every script — no exceptions.
+
+---
+
 ### Mandatory: Branch Before Every Change
 
 **This is a hard rule. Never modify any file without first creating a git branch and committing the current state.**

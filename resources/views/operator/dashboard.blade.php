@@ -590,10 +590,56 @@ $gradients = [
     </div>
 </div>
 
+{{-- ══════════════════════════════════════════════════════════════════════
+     ACTIVATE RESERVATION CONFIRM MODAL
+══════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="activateConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header text-white border-0" style="background:linear-gradient(135deg,#1e3c72,#2a5298);">
+                <h6 class="modal-title fw-bold mb-0" style="font-family:'Cairo',sans-serif;">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>تأكيد فتح البوابة
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3" style="font-size:2.5rem;">🚗</div>
+                <p class="mb-1 fw-600" style="color:#0f172a;font-family:'Cairo',sans-serif;">
+                    هل تريد تفعيل هذا الحجز؟
+                </p>
+                <p class="text-muted small mb-0">سيتم تسجيل وقت الدخول الآن وفتح البوابة للسيارة.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 gap-2">
+                <button type="button" class="btn btn-light flex-fill fw-600" style="font-family:'Cairo',sans-serif;border-radius:10px;"
+                        data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" id="activateConfirmBtn"
+                        class="btn btn-primary flex-fill fw-bold"
+                        style="font-family:'Cairo',sans-serif;border-radius:10px;">
+                    <i class="bi bi-check2-circle me-1"></i>تأكيد الدخول
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 const lots = {!! $parkingLots->toJson() !!};
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+// ── Toast helper ───────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+    const colors = { success: '#10b981', danger: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+    const t = document.createElement('div');
+    t.style.cssText = `position:fixed;bottom:1.25rem;inset-inline-end:1.25rem;z-index:9999;
+        background:${colors[type]||colors.success};color:#fff;padding:.75rem 1.25rem;border-radius:10px;
+        font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:600;
+        box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .25s;max-width:320px;`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = '1'; });
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3500);
+}
 
 function selectLot(id) { window.location = '/operator/dashboard?lot_id=' + id; }
 
@@ -670,12 +716,12 @@ async function submitCheckIn() {
             btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>تم!';
             setTimeout(() => location.reload(), 700);
         } else {
-            alert(data.message || 'حدث خطأ');
+            showToast(data.message || 'حدث خطأ', 'danger');
             btn.disabled = false;
             btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>تأكيد الدخول';
         }
     } catch {
-        alert('خطأ في الاتصال');
+        showToast('خطأ في الاتصال', 'danger');
         btn.disabled = false;
         btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>تأكيد الدخول';
     }
@@ -692,8 +738,28 @@ document.getElementById('newEntryModal').addEventListener('hidden.bs.modal', () 
 });
 
 // ── Activate reservation ───────────────────────────────────────────────
-async function activateRes(id, btn) {
-    if (!confirm('تأكيد فتح البوابة لهذا الحجز؟')) return;
+let pendingActivateId  = null;
+let pendingActivateBtn = null;
+let activateModal      = null;
+
+function getActivateModal() {
+    if (!activateModal) activateModal = new bootstrap.Modal(document.getElementById('activateConfirmModal'));
+    return activateModal;
+}
+
+function activateRes(id, btn) {
+    pendingActivateId  = id;
+    pendingActivateBtn = btn;
+    getActivateModal().show();
+}
+
+document.getElementById('activateConfirmBtn').addEventListener('click', async () => {
+    const id  = pendingActivateId;
+    const btn = pendingActivateBtn;
+    if (!id || !btn) return;
+
+    getActivateModal().hide();
+
     const orig = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
@@ -703,21 +769,19 @@ async function activateRes(id, btn) {
         });
         const data = await res.json();
         if (data.success) {
-            // Check-in button → success state
             btn.classList.replace('btn-primary', 'btn-success');
             btn.innerHTML = '<i class="bi bi-check-circle me-1"></i>تم الدخول';
-            // Enable checkout button
             const co = document.getElementById('checkout-' + id);
             if (co) { co.disabled = false; }
         } else {
-            alert(data.message || 'حدث خطأ');
+            showToast(data.message || 'حدث خطأ', 'danger');
             btn.innerHTML = orig; btn.disabled = false;
         }
     } catch {
-        alert('خطأ في الاتصال');
+        showToast('خطأ في الاتصال', 'danger');
         btn.innerHTML = orig; btn.disabled = false;
     }
-}
+});
 
 // ── Receipt modal ──────────────────────────────────────────────────────
 let receiptModal     = null;
@@ -748,7 +812,7 @@ async function openReceipt(id) {
     try {
         const res  = await fetch(`/operator/${id}/checkout-preview`);
         const data = await res.json();
-        if (!data.success) { alert(data.message); return; }
+        if (!data.success) { showToast(data.message || 'حدث خطأ', 'danger'); getModal().hide(); return; }
         const d = data.data;
 
         document.getElementById('rcpt-lot').textContent   = d.lot_name;
@@ -766,7 +830,7 @@ async function openReceipt(id) {
             </div>`).join('');
         document.getElementById('rcpt-breakdown').innerHTML =
             rows || '<p class="text-xs text-center" style="color:#94a3b8;">لا تفاصيل</p>';
-    } catch { alert('تعذّر تحميل بيانات الفاتورة'); }
+    } catch { showToast('تعذّر تحميل بيانات الفاتورة', 'danger'); getModal().hide(); }
 }
 
 function selectPayment(method) {
@@ -777,7 +841,7 @@ function selectPayment(method) {
 document.getElementById('confirmPayBtn').addEventListener('click', async () => {
     if (!currentBookingId) return;
     if (selectedPayment === 'upload' && !document.getElementById('paymentProofFile').files.length) {
-        alert('يرجى رفع إيصال الدفع'); return;
+        showToast('يرجى رفع إيصال الدفع', 'warning'); return;
     }
     const btn = document.getElementById('confirmPayBtn');
     btn.disabled = true;
@@ -800,12 +864,12 @@ document.getElementById('confirmPayBtn').addEventListener('click', async () => {
             if (card) { card.style.transition='opacity .4s'; card.style.opacity='0'; setTimeout(()=>card.remove(),400); }
             setTimeout(() => location.reload(), 600);
         } else {
-            alert(data.message || 'حدث خطأ');
+            showToast(data.message || 'حدث خطأ', 'danger');
             btn.disabled  = false;
             btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>تأكيد الدفع';
         }
     } catch {
-        alert('خطأ في الاتصال');
+        showToast('خطأ في الاتصال', 'danger');
         btn.disabled  = false;
         btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i>تأكيد الدفع';
     }

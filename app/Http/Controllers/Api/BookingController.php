@@ -20,6 +20,7 @@ class BookingController extends Controller
 
         $lot = \App\Models\ParkingLot::find($validated['parking_lot_id']);
         $validated['pricing_snapshot'] = $lot?->pricingSnapshot();
+        $validated['user_id'] = $request->user()->id;
 
         $booking = \App\Models\Booking::create($validated);
 
@@ -34,9 +35,17 @@ class BookingController extends Controller
 
     public function index(Request $request)
     {
-        $bookings = Booking::with('parkingLot')
-            ->latest()
-            ->paginate(10);
+        $query = Booking::with('parkingLot')->latest();
+
+        if ($request->filled('date')) {
+            $query->whereDate('created_at', $request->date);
+        }
+
+        if ($request->filled('parking_lot_id')) {
+            $query->where('parking_lot_id', $request->parking_lot_id);
+        }
+
+        $bookings = $query->paginate($request->integer('per_page', 10));
 
         return response()->json([
             'success' => true,

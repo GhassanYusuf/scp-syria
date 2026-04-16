@@ -74,7 +74,7 @@
                 </a>
             </div>
             <div class="col-lg-3 col-sm-6">
-                <div class="quick-card card h-100 p-4" onclick="alert('قريباً...')">
+                <div class="quick-card card h-100 p-4" style="cursor:default;">
                     <div class="quick-icon" style="background:rgba(100,116,139,.1);">
                         <i class="bi bi-gear" style="color:#64748b;"></i>
                     </div>

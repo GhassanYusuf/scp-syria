@@ -218,6 +218,100 @@
         </div>
     </div>
 
+    {{-- ══ BOOKING FORM MODAL ══════════════════════════════════════════════════ --}}
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+            <div class="modal-content" style="border:none;border-radius:1rem;overflow:hidden;">
+
+                {{-- Top banner: lot info --}}
+                <div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:1.25rem 1.5rem;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width:42px;height:42px;background:rgba(99,102,241,.25);border-radius:.625rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                            <i class="bi bi-p-square-fill" style="color:#a5b4fc;font-size:1.2rem;"></i>
+                        </div>
+                        <div class="flex-grow-1 min-width-0">
+                            <div id="bookingLotName" class="fw-700 text-truncate" style="color:#f8fafc;font-size:.95rem;"></div>
+                            <div id="bookingLotMeta" class="text-xs mt-1" style="color:#94a3b8;"></div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="modal"></button>
+                    </div>
+                </div>
+
+                {{-- Booker identity (read-only) --}}
+                <div style="background:#f8fafc;padding:.75rem 1.5rem;border-bottom:1px solid #f1f5f9;">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-person-check-fill" style="color:#10b981;font-size:.95rem;"></i>
+                        <span class="text-xs fw-600" style="color:#475569;" id="bookingUserInfo"></span>
+                    </div>
+                </div>
+
+                <div class="p-4">
+                    {{-- Alert --}}
+                    <div id="bookingAlert" class="d-none mb-3"></div>
+
+                    <div class="row g-3">
+                        {{-- Plate number --}}
+                        <div class="col-12">
+                            <label class="form-label fw-600" style="font-size:.82rem;color:#374151;">
+                                <i class="bi bi-car-front me-1" style="color:#6366f1;"></i>
+                                رقم لوحة السيارة
+                            </label>
+                            <input type="text" id="bkPlate" class="form-control fw-700"
+                                   style="letter-spacing:.1em;text-transform:uppercase;font-size:1rem;text-align:center;"
+                                   placeholder="أ ب ج  1234" dir="ltr">
+                        </div>
+
+                        {{-- Date/time --}}
+                        <div class="col-6">
+                            <label class="form-label fw-600" style="font-size:.82rem;color:#374151;">
+                                <i class="bi bi-play-circle me-1" style="color:#10b981;"></i>
+                                من
+                            </label>
+                            <input type="datetime-local" id="bkStart" class="form-control" dir="ltr" style="font-size:.85rem;">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-600" style="font-size:.82rem;color:#374151;">
+                                <i class="bi bi-stop-circle me-1" style="color:#ef4444;"></i>
+                                إلى
+                            </label>
+                            <input type="datetime-local" id="bkEnd" class="form-control" dir="ltr" style="font-size:.85rem;">
+                        </div>
+
+                        {{-- Price summary --}}
+                        <div class="col-12">
+                            <div id="bookingPriceSummary" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:.625rem;padding:.875rem 1rem;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-xs" style="color:#64748b;">المدة</span>
+                                    <span class="fw-600 text-xs" id="bkDuration" style="color:#0f172a;">--</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-xs" style="color:#64748b;">السعر / ساعة</span>
+                                    <span class="fw-600 text-xs" id="bkHourlyRate" style="color:#0f172a;">--</span>
+                                </div>
+                                <div style="border-top:1px dashed #bbf7d0;margin:.5rem 0;"></div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-700" style="color:#065f46;font-size:.85rem;">المبلغ الإجمالي</span>
+                                    <span class="fw-800" id="bkTotal" style="color:#059669;font-size:1.15rem;">--</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-4 pb-4 d-flex gap-2">
+                    <button type="button" class="btn btn-sm fw-600"
+                            style="background:#f1f5f9;color:#475569;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem 1rem;"
+                            data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" id="confirmBookingBtn"
+                            class="btn btn-sm fw-700 flex-grow-1"
+                            style="background:#10b981;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem;">
+                        <i class="bi bi-check-lg me-1"></i>تأكيد الحجز
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- ══ MOBILE BOTTOM NAV ══════════════════════════════════════════════════ --}}
     <nav class="mobile-bottom-nav" aria-label="التنقل الرئيسي">
         <a href="#" class="mob-nav-item active" data-tab="list"
@@ -402,14 +496,137 @@
             getModal().show();
         }
 
+        // ── Auth state (from server) ──────────────────────────────────────────
+        const authUser = @auth {
+            id:    {{ auth()->id() }},
+            name:  {{ Js::from(auth()->user()->name) }},
+            phone: {{ Js::from(auth()->user()->phone ?? '') }}
+        } @else null @endauth;
+
         // ── Reserve ───────────────────────────────────────────────────────────
         document.getElementById('reserveBtn').addEventListener('click', () => {
             if (!current || current.avail <= 0) return;
-            alert(`تم حجز مكان في ${current.name}!\nالعنوان: ${current.address}\nالسعر: ${fmtPrice(current.price)} / ساعة`);
-            current.avail--;
+
+            if (!authUser) {
+                // Guest — redirect to login, come back after
+                window.location.href = '{{ route('login') }}';
+                return;
+            }
+
+            // Logged in — open booking form
             getModal().hide();
-            renderList(lots);
+            openBookingModal(current);
         });
+
+        // ── Booking modal ─────────────────────────────────────────────────────
+        let bookingModal = null;
+        function getBookingModal() {
+            if (!bookingModal) bookingModal = new bootstrap.Modal(document.getElementById('bookingModal'));
+            return bookingModal;
+        }
+
+        function toLocalInput(date) {
+            const pad = n => String(n).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        function calcTotal() {
+            const start = document.getElementById('bkStart').value;
+            const end   = document.getElementById('bkEnd').value;
+            if (!start || !end || !current) return;
+            const diffMs   = new Date(end) - new Date(start);
+            if (diffMs <= 0) { resetPrice(); return; }
+            const hours    = Math.ceil(diffMs / 3600000); // round up per fee logic
+            const total    = hours * current.price;
+            document.getElementById('bkDuration').textContent  = hours + (hours === 1 ? ' ساعة' : ' ساعات');
+            document.getElementById('bkHourlyRate').textContent = fmtPrice(current.price);
+            document.getElementById('bkTotal').textContent      = fmtPrice(total);
+        }
+
+        function resetPrice() {
+            document.getElementById('bkDuration').textContent  = '--';
+            document.getElementById('bkHourlyRate').textContent = '--';
+            document.getElementById('bkTotal').textContent      = '--';
+        }
+
+        document.getElementById('bkStart').addEventListener('change', calcTotal);
+        document.getElementById('bkEnd').addEventListener('change', calcTotal);
+
+        function openBookingModal(lot) {
+            document.getElementById('bookingLotName').textContent = lot.name;
+            document.getElementById('bookingLotMeta').textContent = lot.address + ' · ' + fmtPrice(lot.price) + ' / ساعة';
+            document.getElementById('bookingUserInfo').textContent =
+                authUser.name + (authUser.phone ? '  |  ' + authUser.phone : '');
+            document.getElementById('bkPlate').value = '';
+
+            // Default: now → now+2h
+            const now   = new Date();
+            const later = new Date(now.getTime() + 2 * 3600 * 1000);
+            document.getElementById('bkStart').value = toLocalInput(now);
+            document.getElementById('bkEnd').value   = toLocalInput(later);
+            calcTotal();
+
+            document.getElementById('bookingAlert').className = 'd-none mb-3';
+            document.getElementById('bookingAlert').innerHTML = '';
+
+            getBookingModal().show();
+        }
+
+        document.getElementById('confirmBookingBtn').addEventListener('click', async () => {
+            const plate = document.getElementById('bkPlate').value.trim();
+            const start = document.getElementById('bkStart').value;
+            const end   = document.getElementById('bkEnd').value;
+            const alertEl = document.getElementById('bookingAlert');
+
+            const showErr = msg => {
+                alertEl.className = 'alert border-0 rounded-3 py-2 mb-3 text-sm';
+                alertEl.style.cssText = 'background:rgba(239,68,68,.1);color:#b91c1c;';
+                alertEl.innerHTML = `<i class="bi bi-exclamation-triangle me-1"></i>${msg}`;
+            };
+
+            if (!plate) return showErr('الرجاء إدخال رقم لوحة السيارة.');
+            if (!start) return showErr('الرجاء تحديد وقت البدء.');
+            if (!end)   return showErr('الرجاء تحديد وقت الانتهاء.');
+            if (new Date(end) <= new Date(start)) return showErr('وقت الانتهاء يجب أن يكون بعد وقت البدء.');
+
+            const btn = document.getElementById('confirmBookingBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحجز...';
+
+            try {
+                const resp = await axios.post('/reserve', {
+                    parking_lot_id: current.id,
+                    vehicle_plate:  plate,
+                    start_time:     start.replace('T', ' ') + ':00',
+                    end_time:       end.replace('T', ' ')   + ':00',
+                });
+
+                if (resp.data.success) {
+                    getBookingModal().hide();
+                    current.avail = Math.max(0, current.avail - 1);
+                    renderList(lots);
+                    showToast('تم الحجز بنجاح! يمكنك متابعة حجوزاتك من حسابي.');
+                }
+            } catch (err) {
+                const errors = err.response?.data?.errors;
+                const msg = errors
+                    ? Object.values(errors).flat().join(' — ')
+                    : (err.response?.data?.message || 'حدث خطأ، الرجاء المحاولة مجدداً.');
+                showErr(msg);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>تأكيد الحجز';
+            }
+        });
+
+        // ── Toast ─────────────────────────────────────────────────────────────
+        function showToast(msg) {
+            const t = document.createElement('div');
+            t.style.cssText = 'position:fixed;bottom:80px;inset-inline-start:50%;transform:translateX(-50%);background:#0f172a;color:#f8fafc;padding:.6rem 1.25rem;border-radius:.625rem;font-size:.85rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.25);white-space:nowrap;';
+            t.innerHTML = `<i class="bi bi-check-circle-fill me-2" style="color:#10b981;"></i>${msg}`;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 4000);
+        }
 
         // ── Search ────────────────────────────────────────────────────────────
         function doSearch() {

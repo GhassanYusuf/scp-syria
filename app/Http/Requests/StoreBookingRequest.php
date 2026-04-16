@@ -25,23 +25,17 @@ class StoreBookingRequest extends FormRequest
     {
         return [
             'parking_lot_id' => 'required|exists:parking_lots,id',
-            'customer_name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20|regex:/^09[0-9]{8}$/',
-            'start_time' => 'required|date|after:now',
-            'end_time' => 'required|date|after:start_time',
+            'customer_name'  => 'required|string|max:255',
+            'phone'          => 'required|string|max:30',
+            'vehicle_plate'  => 'nullable|string|max:20',
+            'start_time'     => 'required|date|after:now',
+            'end_time'       => 'required|date|after:start_time',
         ];
     }
 
     /**
      * Get custom messages for validator errors.
      */
-    public function messages(): array
-    {
-        return [
-            'phone.regex' => 'رقم الهاتف يجب أن يكون رقم سوري صالح (09xxxxxxxx).',
-        ];
-    }
-
     /**
      * Configure the validator after the validation rules have run.
      */

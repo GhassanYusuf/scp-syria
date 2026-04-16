@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\Booking;
+use App\Models\ParkingLot;
 
 class ProfileController extends Controller
 {
@@ -16,13 +17,20 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
-        $validated = $request->validateWithBag('updateName', [
-            'name' => 'required|string|max:255',
+        $request->validateWithBag('updateName', [
+            'name'          => 'required|string|max:255',
+            'phone_country' => 'required|string|max:10',
+            'phone_local'   => 'required|string|max:20',
+        ], [
+            'phone_local.required' => 'رقم الهاتف مطلوب.',
         ]);
 
-        Auth::user()->update(['name' => $validated['name']]);
+        Auth::user()->update([
+            'name'  => $request->name,
+            'phone' => $request->phone_country . $request->phone_local,
+        ]);
 
-        return back()->with('success', 'تم تحديث الاسم بنجاح.');
+        return back()->with('success', 'تم تحديث البيانات بنجاح.');
     }
 
     public function updatePassword(Request $request)
@@ -42,6 +50,48 @@ class ProfileController extends Controller
         Auth::user()->update(['password' => Hash::make($request->password)]);
 
         return back()->with('success', 'تم تغيير كلمة السر بنجاح.');
+    }
+
+    public function reserve(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'parking_lot_id' => 'required|exists:parking_lots,id',
+            'vehicle_plate'  => 'required|string|max:20',
+            'start_time'     => 'required|date|after:now',
+            'end_time'       => 'required|date|after:start_time',
+        ]);
+
+        $lot = ParkingLot::findOrFail($request->parking_lot_id);
+
+        // Check capacity
+        $active = $lot->carRegistries()->active()->count()
+                + $lot->bookings()->where('status', 'active')->count();
+        if ($active >= $lot->total_capacity) {
+            return response()->json([
+                'success' => false,
+                'message' => 'الموقف ممتلئ حالياً.',
+            ], 409);
+        }
+
+        $booking = Booking::create([
+            'user_id'          => $user->id,
+            'parking_lot_id'   => $lot->id,
+            'customer_name'    => $user->name,
+            'phone'            => $user->phone ?? '',
+            'vehicle_plate'    => $request->vehicle_plate,
+            'start_time'       => $request->start_time,
+            'end_time'         => $request->end_time,
+            'status'           => 'active',
+            'pricing_snapshot' => $lot->pricingSnapshot(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'تم الحجز بنجاح.',
+            'data'    => ['id' => $booking->id],
+        ], 201);
     }
 
     public function dashboard()

@@ -86,7 +86,7 @@ class OperatorController extends Controller
             'phone'            => $data['phone'] ?? null,
             'source'           => 'walk_in',
             'start_time'       => now(),
-            'end_time'         => now()->addHours($data['duration_hours']),
+            'end_time'         => now()->addHours((float) $data['duration_hours']),
             'status'           => 'active',
             'pricing_snapshot' => $lot->pricingSnapshot(),
         ]);

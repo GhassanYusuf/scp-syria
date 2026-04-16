@@ -796,4 +796,12 @@ body {
         border-top-right-radius: 0 !important;
         border-bottom-right-radius: 0 !important;
     }
+
+    // Bootstrap compiles .modal-header .btn-close with physical margin-left:auto,
+    // which in RTL pushes the button to the right (next to the title).
+    // Swap it so the × always appears at the far LEFT end of the header.
+    .modal-header .btn-close {
+        margin-left: 0;
+        margin-right: auto;
+    }
 }

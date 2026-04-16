@@ -14,6 +14,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::patch('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::get('/dashboard', [ProfileController::class, 'dashboard'])->name('user.dashboard');
+
+    // Booking from the public landing page (web session auth)
+    Route::post('/reserve', [ProfileController::class, 'reserve'])->name('reserve');
 });
 
 // Admin Dashboard routes (protected - uncomment auth middleware for production)

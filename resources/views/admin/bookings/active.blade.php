@@ -307,7 +307,7 @@
                     <td class="text-center">
                         <button class="btn btn-sm fw-600"
                                 style="background:rgba(239,68,68,.1);color:#dc2626;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.35rem .9rem;"
-                                onclick="completeBooking({{ $booking->id }}, this)">
+                                onclick="askComplete({{ $booking->id }}, '{{ addslashes($booking->vehicle_plate ?? '—') }}', '{{ addslashes($booking->parkingLot->name) }}')">
                             <i class="bi bi-stop-circle me-1"></i>إنهاء
                         </button>
                     </td>
@@ -338,59 +338,148 @@
 
 </div>
 
+{{-- ── Confirm complete modal ───────────────────────────────────────────────── --}}
+<div class="modal fade" id="confirmCompleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+        <div class="modal-content" style="border:none;border-radius:1rem;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.15);">
+            <div style="background:linear-gradient(135deg,#dc2626,#ef4444);padding:1.25rem 1.5rem;">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="width:44px;height:44px;background:rgba(255,255,255,.15);border-radius:.75rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <i class="bi bi-stop-circle-fill" style="font-size:1.3rem;color:#fff;"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="fw-800" style="color:#fff;font-size:1rem;">إنهاء الحجز</div>
+                        <div class="text-xs mt-1" style="color:rgba(255,255,255,.75);">تأكيد تسجيل خروج السيارة</div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white flex-shrink-0" data-bs-dismiss="modal"></button>
+                </div>
+            </div>
+            <div class="p-4">
+                <div class="p-3 rounded-3 mb-4" style="background:#f8fafc;border:1px solid #f1f5f9;">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-xs fw-600" style="color:#64748b;">رقم اللوحة</span>
+                        <span class="fw-800" id="confirmPlate" style="font-family:monospace;font-size:1rem;color:#0f172a;letter-spacing:.05em;"></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-xs fw-600" style="color:#64748b;">الموقف</span>
+                        <span class="fw-600 text-sm" id="confirmLot" style="color:#475569;"></span>
+                    </div>
+                </div>
+                <p class="text-sm mb-0" style="color:#64748b;text-align:center;">
+                    هل تريد إنهاء هذا الحجز وتسجيل خروج السيارة؟
+                </p>
+            </div>
+            <div class="px-4 pb-4 d-flex gap-2">
+                <button type="button" class="btn btn-sm fw-600"
+                        style="background:#f1f5f9;color:#475569;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem 1rem;"
+                        data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" id="confirmCompleteBtn"
+                        class="btn btn-sm fw-700 flex-grow-1"
+                        style="background:#ef4444;color:#fff;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;padding:.5rem;">
+                    <i class="bi bi-stop-circle me-1"></i>تأكيد الإنهاء
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- ── Toast ────────────────────────────────────────────────────────────────── --}}
+<div id="toastWrap" style="position:fixed;bottom:1.5rem;inset-inline-start:50%;transform:translateX(-50%);z-index:9999;pointer-events:none;"></div>
+
 @push('scripts')
 <script>
+// ── Filters ───────────────────────────────────────────────────────────────────
 function applyFilters() {
     const url    = new URL(window.location);
     const lot    = document.getElementById('lotFilter').value;
     const search = document.getElementById('searchInput').value.trim();
-    lot    ? url.searchParams.set('parking_lot_id', lot)    : url.searchParams.delete('parking_lot_id');
-    search ? url.searchParams.set('search', search)          : url.searchParams.delete('search');
+    lot    ? url.searchParams.set('parking_lot_id', lot) : url.searchParams.delete('parking_lot_id');
+    search ? url.searchParams.set('search', search)      : url.searchParams.delete('search');
     url.searchParams.delete('page');
     window.location.href = url.toString();
 }
-
 document.getElementById('lotFilter').addEventListener('change', applyFilters);
 document.getElementById('searchInput').addEventListener('keydown', e => {
     if (e.key === 'Enter') applyFilters();
 });
 
-async function completeBooking(id, btn) {
-    if (!confirm('إنهاء هذا الحجز؟')) return;
-    const orig = btn.innerHTML;
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+    const color = type === 'success' ? '#10b981' : '#ef4444';
+    const icon  = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+    const el = document.createElement('div');
+    el.style.cssText = `background:#0f172a;color:#f8fafc;padding:.65rem 1.25rem;border-radius:.625rem;font-size:.85rem;font-weight:600;box-shadow:0 4px 20px rgba(0,0,0,.25);display:flex;align-items:center;gap:.6rem;pointer-events:auto;margin-top:.5rem;`;
+    el.innerHTML = `<i class="bi ${icon}" style="color:${color};font-size:1rem;flex-shrink:0;"></i>${msg}`;
+    document.getElementById('toastWrap').appendChild(el);
+    setTimeout(() => { el.style.transition='opacity .4s'; el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3500);
+}
+
+// ── Confirm complete modal ────────────────────────────────────────────────────
+let pendingId = null;
+let confirmModal = null;
+
+function getConfirmModal() {
+    if (!confirmModal) confirmModal = new bootstrap.Modal(document.getElementById('confirmCompleteModal'));
+    return confirmModal;
+}
+
+function askComplete(id, plate, lot) {
+    pendingId = id;
+    document.getElementById('confirmPlate').textContent = plate;
+    document.getElementById('confirmLot').textContent   = lot;
+    getConfirmModal().show();
+}
+
+document.getElementById('confirmCompleteBtn').addEventListener('click', async () => {
+    if (!pendingId) return;
+    const btn = document.getElementById('confirmCompleteBtn');
     btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الإنهاء...';
+
     try {
-        const res  = await fetch(`/admin/bookings/${id}/complete`, {
+        const res  = await fetch(`/admin/bookings/${pendingId}/complete`, {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             }
         });
         const data = await res.json();
+        getConfirmModal().hide();
         if (data.success) {
-            const row = document.getElementById('row-' + id);
-            row.style.transition = 'opacity .4s, transform .4s';
-            row.style.opacity    = '0';
-            row.style.transform  = 'translateX(20px)';
-            setTimeout(() => row.remove(), 420);
+            const row = document.getElementById('row-' + pendingId);
+            if (row) {
+                row.style.transition = 'opacity .4s, transform .4s';
+                row.style.opacity    = '0';
+                row.style.transform  = 'translateX(20px)';
+                setTimeout(() => row.remove(), 420);
+            }
+            showToast('تم إنهاء الحجز بنجاح.');
         } else {
-            alert(data.message || 'خطأ');
-            btn.innerHTML = orig;
-            btn.disabled  = false;
+            showToast(data.message || 'حدث خطأ أثناء الإنهاء.', 'error');
         }
     } catch {
-        alert('خطأ في الاتصال');
-        btn.innerHTML = orig;
-        btn.disabled  = false;
+        getConfirmModal().hide();
+        showToast('تعذّر الاتصال بالخادم. حاول مجدداً.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-stop-circle me-1"></i>تأكيد الإنهاء';
+        pendingId = null;
     }
-}
+});
 
-// Countdown refresh
+// ── Auto-refresh (pauses while modal is open) ─────────────────────────────────
 let t = 30;
+let refreshPaused = false;
 const badge = document.getElementById('refresh-badge');
+
+document.querySelectorAll('.modal').forEach(m => {
+    m.addEventListener('show.bs.modal',   () => { refreshPaused = true; });
+    m.addEventListener('hidden.bs.modal', () => { refreshPaused = false; t = 30; });
+});
+
 setInterval(() => {
+    if (refreshPaused) return;
     t--;
     badge.textContent = `تحديث بعد ${t}ث`;
     if (t <= 0) location.reload();

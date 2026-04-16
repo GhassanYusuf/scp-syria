@@ -111,7 +111,7 @@
                 <a href="{{ route('parking.index') }}"
                    class="btn btn-sm d-none d-md-inline-flex align-items-center"
                    style="background:#f1f5f9;color:#475569;border:none;border-radius:.5rem;font-family:'Cairo',sans-serif;"
-                   target="_blank">
+                   >
                     <i class="bi bi-globe2 me-1"></i>الموقع العام
                 </a>
                 {{-- Mobile: user avatar + logout --}}

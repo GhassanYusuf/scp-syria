@@ -485,10 +485,81 @@ $gradients = [
     </div>
 </div>
 
+{{-- Toggle Status Confirmation Modal --}}
+<div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header border-0 text-white" style="background:linear-gradient(135deg,#f59e0b,#d97706);">
+                <h6 class="modal-title fw-bold mb-0" style="font-family:'Cairo',sans-serif;">
+                    <i class="bi bi-toggle-on me-2"></i>تغيير حالة الموقف
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <p class="mb-0 fw-600" style="color:#0f172a;font-family:'Cairo',sans-serif;">
+                    هل تريد تغيير حالة هذا الموقف؟
+                </p>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 gap-2">
+                <button type="button" class="btn btn-light flex-fill fw-600" style="font-family:'Cairo',sans-serif;border-radius:10px;"
+                        data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" id="toggleStatusConfirmBtn"
+                        class="btn btn-warning flex-fill fw-bold text-white"
+                        style="font-family:'Cairo',sans-serif;border-radius:10px;">
+                    <i class="bi bi-check2 me-1"></i>تأكيد
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Delete Lot Confirmation Modal --}}
+<div class="modal fade" id="deleteLotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header border-0 text-white" style="background:linear-gradient(135deg,#dc2626,#991b1b);">
+                <h6 class="modal-title fw-bold mb-0" style="font-family:'Cairo',sans-serif;">
+                    <i class="bi bi-trash3 me-2"></i>حذف الموقف
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3" style="font-size:2.5rem;">⚠️</div>
+                <p class="fw-700 mb-1" style="color:#0f172a;font-family:'Cairo',sans-serif;">
+                    حذف "<span id="deleteLotName"></span>"
+                </p>
+                <p class="text-muted small mb-0">سيتم حذف جميع بيانات الموقف نهائياً ولا يمكن التراجع.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 gap-2">
+                <button type="button" class="btn btn-light flex-fill fw-600" style="font-family:'Cairo',sans-serif;border-radius:10px;"
+                        data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" id="deleteLotConfirmBtn"
+                        class="btn btn-danger flex-fill fw-bold"
+                        style="font-family:'Cairo',sans-serif;border-radius:10px;">
+                    <i class="bi bi-trash3 me-1"></i>حذف نهائياً
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-window.onerror = (msg, src, line) => { alert('JS خطأ في السطر ' + line + ':\n' + msg); };
+// ── Toast helper ─────────────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+    const colors = { success:'#10b981', danger:'#ef4444', warning:'#f59e0b', info:'#3b82f6' };
+    const t = document.createElement('div');
+    t.style.cssText = `position:fixed;bottom:1.25rem;inset-inline-end:1.25rem;z-index:9999;
+        background:${colors[type]||colors.success};color:#fff;padding:.75rem 1.25rem;border-radius:10px;
+        font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:600;
+        box-shadow:0 8px 24px rgba(0,0,0,.18);opacity:0;transition:opacity .25s;max-width:360px;`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => { t.style.opacity = '1'; });
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
 // ── Parking lots data from server ─────────────────────────────────────────
 const lotsData = @json($parkingLots->items());
 
@@ -591,7 +662,7 @@ function previewImage(input) {
 
 function editLot(id) {
     const lot = lotsData.find(l => l.id === id);
-    if (!lot) { alert('لم يتم العثور على بيانات الموقف'); return; }
+    if (!lot) { showToast('لم يتم العثور على بيانات الموقف', 'danger'); return; }
 
     editingId = id;
     document.getElementById('modalLabel').textContent  = 'تعديل: ' + lot.name;
@@ -632,12 +703,12 @@ async function saveLot() {
         if (result.success) {
             location.reload();
         } else if (result.errors) {
-            const msgs = Object.values(result.errors).flat().join('\n');
-            alert(msgs);
+            const msgs = Object.values(result.errors).flat().join(' — ');
+            showToast(msgs, 'danger');
         } else {
-            alert(result.message || 'خطأ في العملية');
+            showToast(result.message || 'خطأ في العملية', 'danger');
         }
-    } catch(err) { alert('خطأ في الاتصال: ' + err.message); }
+    } catch(err) { showToast('خطأ في الاتصال', 'danger'); }
     finally { setBtnLoading(false); }
 }
 
@@ -646,13 +717,26 @@ function setBtnLoading(on) {
     document.getElementById('submitSpinner').classList.toggle('d-none', !on);
 }
 
+let pendingToggleId = null;
+const toggleModal = new bootstrap.Modal(document.getElementById('toggleStatusModal'));
+
 function toggleStatus(id) {
-    if (!confirm('تغيير حالة الموقف؟')) return;
-    fetch(`/admin/parking-lots/${id}/toggle`, {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
-    }).then(r => r.json()).then(d => d.success ? location.reload() : alert(d.message));
+    pendingToggleId = id;
+    toggleModal.show();
 }
+
+document.getElementById('toggleStatusConfirmBtn').addEventListener('click', async () => {
+    if (!pendingToggleId) return;
+    toggleModal.hide();
+    try {
+        const res  = await fetch(`/admin/parking-lots/${pendingToggleId}/toggle`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content }
+        });
+        const d = await res.json();
+        d.success ? location.reload() : showToast(d.message || 'حدث خطأ', 'danger');
+    } catch { showToast('خطأ في الاتصال', 'danger'); }
+});
 
 document.getElementById('searchInput').addEventListener('keypress', e => {
     if (e.key === 'Enter') doSearch();
@@ -685,7 +769,7 @@ function openPricingModal(id, name) {
         updatePricingPreview();
         bootstrap.Modal.getOrCreateInstance(document.getElementById('pricingModal')).show();
     } catch(e) {
-        alert('خطأ في فتح نافذة التسعير:\n' + e.message);
+        showToast('خطأ في فتح نافذة التسعير', 'danger');
     }
 }
 
@@ -726,7 +810,7 @@ async function savePricing() {
     const base = parseFloat(document.getElementById('p_base').value);
 
     if (isNaN(base) || base < 0) {
-        alert('يرجى إدخال سعر أساسي صحيح');
+        showToast('يرجى إدخال سعر أساسي صحيح', 'warning');
         return;
     }
 
@@ -755,21 +839,33 @@ async function savePricing() {
             bootstrap.Modal.getInstance(document.getElementById('pricingModal'))?.hide();
             location.reload();
         } else {
-            alert(data.message || 'خطأ في الحفظ');
+            showToast(data.message || 'خطأ في الحفظ', 'danger');
         }
     } catch {
-        alert('خطأ في الاتصال');
+        showToast('خطأ في الاتصال', 'danger');
     } finally {
         document.getElementById('savePricingBtn').disabled = false;
         document.getElementById('pricingSpinner').classList.add('d-none');
     }
 }
 
-async function deleteLot(id, name) {
-    if (!confirm(`حذف الموقف "${name}"؟\nسيتم حذف جميع بيانات الموقف نهائياً.`)) return;
+let pendingDeleteId   = null;
+const deleteModal = new bootstrap.Modal(document.getElementById('deleteLotModal'));
 
+function deleteLot(id, name) {
+    pendingDeleteId = id;
+    document.getElementById('deleteLotName').textContent = name;
+    deleteModal.show();
+}
+
+document.getElementById('deleteLotConfirmBtn').addEventListener('click', async () => {
+    if (!pendingDeleteId) return;
+    const btn = document.getElementById('deleteLotConfirmBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>جاري الحذف...';
+    deleteModal.hide();
     try {
-        const res  = await fetch(`/admin/parking-lots/${id}`, {
+        const res  = await fetch(`/admin/parking-lots/${pendingDeleteId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -780,12 +876,16 @@ async function deleteLot(id, name) {
         if (data.success) {
             location.reload();
         } else {
-            alert(data.message || 'تعذّر الحذف');
+            showToast(data.message || 'تعذّر الحذف', 'danger');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-trash3 me-1"></i>حذف نهائياً';
         }
     } catch {
-        alert('خطأ في الاتصال');
+        showToast('خطأ في الاتصال', 'danger');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-trash3 me-1"></i>حذف نهائياً';
     }
-}
+});
 </script>
 @endpush
 

@@ -85,7 +85,8 @@ class DashboardController extends Controller
             'success' => true,
             'data' => [
                 'daily_bookings' => array_values($dates),
-                'top_parking_lots' => $topLots->map(fn($lot) => ['name' => $lot->name, 'value' => $lot->bookings_count])->toArray(),
+                'top_parking_lots' => $topLots->map(fn($lot) => ['id' => $lot->id, 'name' => $lot->name, 'value' => $lot->bookings_count])->toArray(),
+                'daily_dates'      => array_keys($dates),
                 'occupancy_trend' => $trend,
             ]
         ]);

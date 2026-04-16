@@ -18,16 +18,21 @@ Route::middleware('guest')->group(function () {
 
     Route::post('register', function (Request $request) {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|confirmed|min:8',
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email',
+            'phone_country' => 'required|string|max:10',
+            'phone_local'   => 'required|string|max:20',
+            'password'      => 'required|confirmed|min:8',
+        ], [
+            'phone_local.required' => 'رقم الهاتف مطلوب.',
         ]);
 
         $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'phone'    => $request->phone_country . $request->phone_local,
             'password' => Hash::make($request->password),
-            'role' => 'user', // default
+            'role'     => 'user',
         ]);
 
         Auth::login($user);

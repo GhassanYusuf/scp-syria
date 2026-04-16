@@ -46,6 +46,42 @@
     </div>
 
     <div class="mb-3">
+        <label class="form-label">رقم الهاتف</label>
+        @php
+        $countries = [
+            ['🇸🇾','سوريا','+963'],['🇸🇦','السعودية','+966'],['🇦🇪','الإمارات','+971'],
+            ['🇯🇴','الأردن','+962'],['🇱🇧','لبنان','+961'],['🇮🇶','العراق','+964'],
+            ['🇪🇬','مصر','+20'],['🇴🇲','عُمان','+968'],['🇶🇦','قطر','+974'],
+            ['🇰🇼','الكويت','+965'],['🇧🇭','البحرين','+973'],['🇾🇪','اليمن','+967'],
+            ['🇵🇸','فلسطين','+970'],['🇲🇦','المغرب','+212'],['🇩🇿','الجزائر','+213'],
+            ['🇹🇳','تونس','+216'],['🇱🇾','ليبيا','+218'],['🇸🇩','السودان','+249'],
+            ['🇹🇷','تركيا','+90'],['🇮🇷','إيران','+98'],['🇩🇪','ألمانيا','+49'],
+            ['🇫🇷','فرنسا','+33'],['🇬🇧','بريطانيا','+44'],['🇺🇸','أمريكا','+1'],
+            ['🇷🇺','روسيا','+7'],['🇨🇳','الصين','+86'],['🇮🇳','الهند','+91'],
+            ['🇦🇺','أستراليا','+61'],['🇮🇹','إيطاليا','+39'],['🇪🇸','إسبانيا','+34'],
+            ['🇧🇷','البرازيل','+55'],['🇵🇰','باكستان','+92'],['🇳🇬','نيجيريا','+234'],
+        ];
+        $oldCountry = old('phone_country', '+963');
+        @endphp
+        <div class="input-group @error('phone') is-invalid @enderror">
+            <input type="tel" name="phone_local" value="{{ old('phone_local') }}" required
+                   class="form-control @error('phone') is-invalid @enderror"
+                   style="border-color:#e2e8f0;"
+                   placeholder="912345678" dir="ltr">
+            <select name="phone_country" dir="ltr"
+                    style="max-width:130px;background:#f8fafc;border-color:#e2e8f0;color:#374151;font-family:'Cairo',sans-serif;font-size:.875rem;cursor:pointer;"
+                    class="form-select">
+                @foreach($countries as [$flag, $label, $code])
+                <option value="{{ $code }}" {{ $oldCountry === $code ? 'selected' : '' }}>
+                    {{ $flag }} {{ $code }}
+                </option>
+                @endforeach
+            </select>
+        </div>
+        @error('phone')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+    </div>
+
+    <div class="mb-3">
         <label class="form-label">كلمة السر</label>
         <div class="input-group">
             <span class="input-group-text" style="background:#f8fafc;border-color:#e2e8f0;border-left:none;">
